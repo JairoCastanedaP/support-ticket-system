@@ -48,6 +48,7 @@ public class TicketController {
     public ResponseEntity<TicketEntity> update(
             @PathVariable Long id,
             @RequestBody TicketEntity ticket
+
     ){
         log.info("Saving new ticket");
         Optional<TicketEntity> ticketOptional= ticketRepository.findById(id);
@@ -63,8 +64,8 @@ public class TicketController {
         existingTicket.setPriority(ticket.getPriority());
         existingTicket.setStatus(ticket.getStatus());
 
-        TicketEntity updatedTicket= ticketRepository.save(existingTicket);
-        return ResponseEntity.ok(updatedTicket);
+        //TicketEntity updatedTicket= ticketRepository.save(existingTicket);
+        return ResponseEntity.ok(ticketRepository.save(existingTicket));
     }
 
 }
