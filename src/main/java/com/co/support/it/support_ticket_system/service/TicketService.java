@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface TicketService {
     List<TicketResponseDto> findAll();
-    Optional<TicketResponseDto> findById(Long id);
+    TicketResponseDto findById(Long id);
     TicketResponseDto save(TicketRequestDto ticketRequestDto);
-    Optional<TicketResponseDto> update(Long id, TicketRequestDto ticketRequestDto);
+    TicketResponseDto update(Long id, TicketRequestDto ticketRequestDto);
 }

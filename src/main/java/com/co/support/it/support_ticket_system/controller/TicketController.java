@@ -30,11 +30,7 @@ public class TicketController {
 
     @GetMapping("/{id}")
     public ResponseEntity<TicketResponseDto> findById(@PathVariable Long id){
-        Optional<TicketResponseDto> ticketOptional = ticketService.findById(id);
-        if(ticketOptional.isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(ticketOptional.get());
+        return ResponseEntity.ok(ticketService.findById(id));
     }
 
     @PostMapping
@@ -52,10 +48,8 @@ public class TicketController {
     ){
         log.info("Updating ticket with id: {}", id);
 
-        Optional<TicketResponseDto> updatedTicket= ticketService.update(id,ticketRequestDto);
-        if(updatedTicket.isEmpty()){
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(updatedTicket.get());
+        return ResponseEntity.ok(
+                ticketService.update(id,ticketRequestDto)
+        );
     }
 }

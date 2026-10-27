@@ -3,6 +3,7 @@ package com.co.support.it.support_ticket_system.service;
 import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.entity.TicketEntity;
+import com.co.support.it.support_ticket_system.exception.TicketNotFoundException;
 import com.co.support.it.support_ticket_system.mapper.TicketMapper;
 import com.co.support.it.support_ticket_system.repository.TicketRepository;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,10 @@ public class TicketServiceImpl implements TicketService{
     }
 
     @Override
-    public Optional<TicketResponseDto> findById(Long id) {
-        return ticketRepository.findById(id)
-                .map(ticketMapper::toResponseDto);
+    public TicketResponseDto findById(Long id) {
+        TicketEntity ticket = ticketRepository.findById(id)
+                .orElseThrow(()->new TicketNotFoundException(id));
+        return ticketMapper.toResponseDto(ticket);
     }
 
     @Override
@@ -41,16 +43,21 @@ public class TicketServiceImpl implements TicketService{
     }
 
     @Override
-    public Optional<TicketResponseDto> update(Long id, TicketRequestDto updatedTicketRequestDto) {
+    public TicketResponseDto update(Long id, TicketRequestDto updatedTicketRequestDto) {
+        TicketEntity ticket = ticketRepository.findById(id)
+                .orElseThrow(()->new TicketNotFoundException(id));
 
-        return ticketRepository.findById(id)
-                .map(existingTicket ->{
-                    ticketMapper.updateEntityFromDto(
-                            updatedTicketRequestDto,
-                            existingTicket
-                    );
-                    TicketEntity updatedTicket = ticketRepository.save(existingTicket);
-                    return ticketMapper.toResponseDto(updatedTicket);
-                });
+        /*
+        ticket.setStatus(updatedTicketRequestDto.status());
+        ticket.setTitle(updatedTicketRequestDto.title());
+        ticket.setDescription(updatedTicketRequestDto.description());
+        ticket.setRequesterName(updatedTicketRequestDto.requesterName());
+        ticket.setRequesterEmail(updatedTicketRequestDto.requesterEmail());
+        ticket.setPriority(updatedTicketRequestDto.priority());*/
+
+        ticketMapper.updateEntityFromDto(updatedTicketRequestDto, ticket);
+
+        TicketEntity ticketEntity= ticketRepository.save(ticket);
+        return ticketMapper.toResponseDto(ticketEntity);
     }
 }
