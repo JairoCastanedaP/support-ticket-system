@@ -1,7 +1,9 @@
 package com.co.support.it.support_ticket_system.controller;
 
-import com.co.support.it.support_ticket_system.entity.TicketEntity;
+import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
+import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.service.TicketService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +24,13 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TicketEntity>> findAll(){
+    public ResponseEntity<List<TicketResponseDto>> findAll(){
         return ResponseEntity.ok(ticketService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TicketEntity> findById(@PathVariable Long id){
-        Optional<TicketEntity> ticketOptional = ticketService.findById(id);
+    public ResponseEntity<TicketResponseDto> findById(@PathVariable Long id){
+        Optional<TicketResponseDto> ticketOptional = ticketService.findById(id);
         if(ticketOptional.isEmpty()){
             return ResponseEntity.notFound().build();
         }
@@ -36,29 +38,24 @@ public class TicketController {
     }
 
     @PostMapping
-    public ResponseEntity<TicketEntity> save(@RequestBody TicketEntity ticket){
-        ticket.setId(null);
+    public ResponseEntity<TicketResponseDto> save(@Valid @RequestBody TicketRequestDto ticket){
         log.info("Saving Ticket: {}",ticket);
-        TicketEntity savedTicket= ticketService.save(ticket);
-        URI location = URI.create("/api/v1/tickets/" + savedTicket.getId());
+        TicketResponseDto savedTicket= ticketService.save(ticket);
+        URI location = URI.create("/api/v1/tickets/" + savedTicket.id());
         return ResponseEntity.created(location).body(savedTicket);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TicketEntity> update(
+    public ResponseEntity<TicketResponseDto> update(
             @PathVariable Long id,
-            @RequestBody TicketEntity ticket
-
+            @Valid @RequestBody TicketRequestDto ticketRequestDto
     ){
-        log.info("Saving new ticket");
+        log.info("Updating ticket with id: {}", id);
 
-
-        Optional<TicketEntity> updatedTicket= ticketService.update(id,ticket);
+        Optional<TicketResponseDto> updatedTicket= ticketService.update(id,ticketRequestDto);
         if(updatedTicket.isEmpty()){
             return ResponseEntity.notFound().build();
         }
-
         return ResponseEntity.ok(updatedTicket.get());
     }
-
 }
