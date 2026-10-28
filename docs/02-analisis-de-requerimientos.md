@@ -32,7 +32,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 - Inicio de sesión, SSO y gestión avanzada de permisos.
 - Adjuntos e imágenes.
 - Chat en vivo.
-- Integración con herramientas externas de soporte.
+- Integración con un servicio externo útil para el soporte, pendiente de definir y planificada para una etapa posterior.
 - Notificaciones por correo y recordatorios automáticos.
 - SLA configurable por cliente o múltiples organizaciones.
 - Microservicios y despliegue en AWS.
@@ -99,18 +99,106 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 - **Rendimiento básico:** listados paginados; consultas de indicadores agregadas en persistencia si el volumen lo requiere.
 - **Despliegue:** el sistema deberá poder empaquetarse y arrancarse de forma reproducible al llegar a la etapa de despliegue.
 
-## 8. Modelo de información inicial
+## 8. Modelo relacional inicial
 
-| Entidad | Datos principales | Relaciones |
+El siguiente es el modelo lógico propuesto para el dominio de soporte. Durante la etapa de relaciones JPA se implementará primero con una sola base de datos relacional, para validar claves foráneas y cardinalidades. La distribución entre MySQL y Oracle se tratará en una etapa posterior.
+
+~~~mermaid
+erDiagram
+    REQUESTER ||--o{ TICKET : registra
+    CATEGORY ||--o{ TICKET : clasifica
+    SUPPORT_AGENT o|--o{ TICKET : atiende
+    TICKET ||--o{ TICKET_COMMENT : tiene
+    TICKET ||--o{ TICKET_STATUS_HISTORY : conserva
+
+    REQUESTER {
+        bigint requester_id PK
+        varchar name
+        varchar email
+        boolean active
+    }
+
+    SUPPORT_AGENT {
+        bigint support_agent_id PK
+        varchar name
+        varchar email
+        boolean active
+    }
+
+    CATEGORY {
+        bigint category_id PK
+        varchar name UK
+        varchar description
+        boolean active
+    }
+
+    TICKET {
+        bigint ticket_id PK
+        varchar ticket_number UK
+        varchar title
+        text description
+        varchar priority
+        varchar status
+        datetime created_at
+        datetime updated_at
+        text resolution_note
+        bigint requester_id FK
+        bigint category_id FK
+        bigint assigned_agent_id FK
+    }
+
+    TICKET_COMMENT {
+        bigint comment_id PK
+        bigint ticket_id FK
+        varchar author_type
+        bigint author_id
+        text content
+        varchar visibility
+        datetime created_at
+    }
+
+    TICKET_STATUS_HISTORY {
+        bigint history_id PK
+        bigint ticket_id FK
+        varchar previous_status
+        varchar new_status
+        varchar reason
+        varchar actor_type
+        bigint actor_id
+        datetime changed_at
+    }
+~~~
+
+### Cardinalidades y claves
+
+| Relación | Cardinalidad | Regla |
 |---|---|---|
-| `Requester` | Nombre, correo, estado | Uno a muchos con `Ticket` |
-| `SupportAgent` | Nombre, correo, activo | Uno a muchos con tickets asignados |
-| `Category` | Nombre, descripción, activa | Una categoría clasifica muchos tickets |
-| `Ticket` | Número, título, descripción, prioridad, estado, fechas | Referencia solicitante, categoría y agente asignado |
-| `TicketComment` | Contenido, fecha, tipo/visibilidad, autor | Pertenece a un ticket |
-| `TicketStatusHistory` | Estado anterior/nuevo, fecha, motivo, actor | Pertenece a un ticket |
+| Requester–Ticket | Un solicitante registra cero o muchos tickets; cada ticket tiene un solicitante | requester_id es obligatorio en Ticket |
+| Category–Ticket | Una categoría clasifica cero o muchos tickets; cada ticket tiene una categoría | category_id es obligatorio en Ticket; una categoría inactiva no se asigna a tickets nuevos |
+| SupportAgent–Ticket | Un agente atiende cero o muchos tickets; un ticket puede no estar asignado | assigned_agent_id es opcional; solo se asignan agentes activos |
+| Ticket–TicketComment | Un ticket tiene cero o muchos comentarios; cada comentario pertenece a un ticket | ticket_id es clave foránea |
+| Ticket–TicketStatusHistory | Un ticket conserva cero o muchos cambios de estado; cada cambio pertenece a un ticket | ticket_id es clave foránea |
 
-Para el MVP puede simplificarse `Requester` y `SupportAgent` si todavía no existe autenticación: inicialmente pueden ser registros de referencia administrados por API. No se recomienda almacenar las mismas columnas de persona repetidas en cada ticket.
+### Campos y restricciones de negocio
+
+- Category: nombre obligatorio y único, descripción opcional y estado activo/inactivo.
+- Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización.
+- Priority y status se restringen a valores acordados por el negocio; el catálogo exacto se definirá antes de implementar sus reglas.
+- resolution_note se exige al resolver o cerrar el ticket según la política que se confirme.
+- TicketComment almacena contenido, fecha, autor y visibilidad. author_type diferencia solicitante y agente; author_id identifica a la persona autora.
+- TicketStatusHistory conserva estado anterior/nuevo, fecha, motivo y actor. actor_type y actor_id identifican quién realizó el cambio.
+- Los identificadores de autor y actor son referencias polimórficas; su validación corresponde al servicio mientras no exista una entidad común de identidad.
+
+### Persistencia y posible distribución entre bases
+
+Para la etapa de modelo y relaciones se usará inicialmente una sola base, con claves foráneas reales entre las tablas. Para practicar dos fuentes de datos, la propuesta pendiente de validar es:
+
+- MySQL: Category, Ticket, TicketComment y TicketStatusHistory.
+- Oracle: Requester y SupportAgent, si esas personas realmente se administran allí.
+
+Al separar las fuentes, requester_id y assigned_agent_id en Ticket serán identificadores externos. No habrá claves foráneas ni relaciones JPA entre MySQL y Oracle; las consultas a cada fuente se realizarán por separado. La aplicación debe definir cómo responde si Oracle no está disponible.
+
+Supplier no forma parte del modelo inicial. Se reconsiderará si se aprueba un caso de escalamiento de tickets a proveedores externos. El TicketEntity actual guarda nombre y correo del solicitante directamente; al implementar Requester se deberá decidir cómo migrar esos campos y ajustar TicketRequestDto y sus mappers.
 
 ## 9. Reglas de negocio iniciales
 
@@ -137,10 +225,14 @@ El primer incremento funcional estará listo cuando:
 
 ## 11. Supuestos y preguntas abiertas
 
-- La primera versión será backend REST, sin frontend.
-- MySQL es la base propuesta, pendiente de alineación con el profesor.
-- La autenticación queda fuera del MVP inicial; confirmar si se requiere más adelante.
-- Confirmar con el profesor las versiones de Java y Spring Boot por la diferencia entre el temario y los `pom.xml` de los ejemplos recientes.
+- La primera versión es backend REST, sin frontend.
+- El uso simultáneo de MySQL y Oracle se planifica como etapa del curso; confirmar objetivo y disponibilidad de ambas bases.
+- Propuesta pendiente: MySQL para tickets y datos operativos; Oracle para datos maestros de solicitantes y agentes. Confirmar con el profesor y definir quién administra esos registros.
+- No usar claves foráneas ni relaciones JPA entre las dos bases. Las referencias serán identificadores; definir el comportamiento si alguna fuente no está disponible.
+- Confirmar las versiones de Java y Spring Boot para el entorno de clase y evaluación, por la diferencia entre el temario y los ejemplos locales.
 - Confirmar si la evaluación exige Docker, despliegue cloud, correo, Quartz o Swagger/OpenAPI.
-- Definir si los comentarios del solicitante y las notas internas del agente tienen visibilidad distinta.
-- Definir si se requiere SLA y cómo se mide el tiempo de atención.
+- Definir si comentarios del solicitante y notas internas del agente tienen visibilidad distinta.
+- Aprobar las transiciones de estado, condiciones de cierre y reapertura, y si un cambio de estado exige comentario.
+- Definir qué servicio externo se consumirá. Candidato: catálogo de activos de TI para complementar tickets de hardware; especificar autenticación, timeout y comportamiento ante indisponibilidad.
+- Definir si el alcance requiere SLA y cómo medir el tiempo de atención.
+- Supplier solo se agrega como entidad si se implementa el escalamiento de tickets a proveedores externos.
