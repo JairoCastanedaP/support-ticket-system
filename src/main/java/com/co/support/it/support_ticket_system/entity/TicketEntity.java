@@ -23,12 +23,6 @@ public class TicketEntity {
     @Column(nullable = false, length = 2000)
     private String description;
 
-    @Column(name = "requester_name", nullable = false, length = 120)
-    private String requesterName;
-
-    @Column(name = "requester_email", nullable = false, length = 150)
-    private String requesterEmail;
-
     @Column(nullable = false, length = 20)
     private String priority = "MEDIUM";
 
@@ -38,4 +32,12 @@ public class TicketEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "requester_id", nullable = false)
+    private RequesterEntity requester;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_agent_id")
+    private SupportAgentEntity assignedAgent;
 }

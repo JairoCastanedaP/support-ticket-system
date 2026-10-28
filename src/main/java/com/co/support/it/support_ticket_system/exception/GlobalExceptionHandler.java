@@ -36,4 +36,30 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.badRequest().body(errors);
     }
+    @ExceptionHandler(CategoryNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleCategoryNotFound(
+            CategoryNotFoundException exception
+    ) {
+        Map<String, String> response = Map.of(
+                "message",
+                exception.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+    @ExceptionHandler(RequesterNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleRequesterNotFound(
+            RequesterNotFoundException exception
+    ) {
+        Map<String, String> response = Map.of(
+                "message",
+                exception.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
 }

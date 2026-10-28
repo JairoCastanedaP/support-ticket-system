@@ -1,7 +1,8 @@
 package com.co.support.it.support_ticket_system.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record TicketRequestDto (
@@ -14,14 +15,13 @@ public record TicketRequestDto (
         @Size(max = 2000, message = "La descripcion no debe superar los 2000 caracteres")
         String description,
 
-        @NotBlank(message = "El nombre del solicitante es obligatorio")
-        @Size(max = 120, message = "El nombre no debe superar los 120 caracteres")
-        String requesterName,
+        @NotNull(message = "El solicitante es obligatorio")
+        @Positive(message = "El identificador del solicitante debe ser positivo")
+        Long requesterId,
 
-        @NotBlank(message = "El correo del solicitante es obligatorio")
-        @Size(max = 150, message = "EL correo del solicitante no debe superar los 150 caracteres")
-        @Email(message = "El correo no tiene un formato valido")
-        String requesterEmail,
+        @NotNull(message = "La categoría es obligatoria")
+        @Positive(message = "El identificador de la categoría debe ser positivo")
+        Long categoryId,
 
         @NotBlank(message = "La prioridad es obligatoria")
         @Size(max = 20, message = "La prioridad no debe superar los 20 caracteres")
