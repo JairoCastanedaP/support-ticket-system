@@ -12,6 +12,9 @@ import com.co.support.it.support_ticket_system.repository.RequesterRepository;
 import com.co.support.it.support_ticket_system.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.co.support.it.support_ticket_system.entity.SupportAgentEntity;
+import com.co.support.it.support_ticket_system.exception.SupportAgentNotFoundException;
+import com.co.support.it.support_ticket_system.repository.SupportAgentRepository;
 
 import java.util.List;
 
@@ -22,17 +25,21 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final RequesterRepository requesterRepository;
     private final CategoryRepository categoryRepository;
+    private final SupportAgentRepository supportAgentRepository;
     private final TicketMapper ticketMapper;
+
 
     public TicketServiceImpl(
             TicketRepository ticketRepository,
             RequesterRepository requesterRepository,
             CategoryRepository categoryRepository,
+            SupportAgentRepository supportAgentRepository,
             TicketMapper ticketMapper
     ) {
         this.ticketRepository = ticketRepository;
         this.requesterRepository = requesterRepository;
         this.categoryRepository = categoryRepository;
+        this.supportAgentRepository = supportAgentRepository;
         this.ticketMapper = ticketMapper;
     }
 
@@ -60,6 +67,10 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCategory(categoryRepository.findById(ticketRequestDto.categoryId())
                 .orElseThrow(() -> new CategoryNotFoundException(ticketRequestDto.categoryId())));
 
+        if (ticketRequestDto.supportAgentId() != null) {
+            ticket.setAssignedAgent(findSupportAgent(ticketRequestDto.supportAgentId()));
+        }
+
         TicketEntity savedTicket = ticketRepository.save(ticket);
         return ticketMapper.toResponseDto(savedTicket);
     }
@@ -78,7 +89,18 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCategory(categoryRepository.findById(updatedTicketRequestDto.categoryId())
                 .orElseThrow(() -> new CategoryNotFoundException(updatedTicketRequestDto.categoryId())));
 
+        ticket.setAssignedAgent(
+                updatedTicketRequestDto.supportAgentId() == null
+                        ? null
+                        : findSupportAgent(updatedTicketRequestDto.supportAgentId())
+        );
+
         TicketEntity updatedTicket = ticketRepository.save(ticket);
         return ticketMapper.toResponseDto(updatedTicket);
+    }
+
+    private SupportAgentEntity findSupportAgent(Long id) {
+        return supportAgentRepository.findById(id)
+                .orElseThrow(() -> new SupportAgentNotFoundException(id));
     }
 }

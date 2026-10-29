@@ -11,6 +11,9 @@ public record TicketResponseDto(
         String requesterPhoneNumber,
         Long categoryId,
         String categoryName,
+        Long supportAgentId,
+        String supportAgentName,
+        String supportAgentSurname,
         String priority,
         String status
 ) {

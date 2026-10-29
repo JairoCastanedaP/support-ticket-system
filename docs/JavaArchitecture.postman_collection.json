@@ -506,7 +506,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8081/api/v1/tickets/2",
+									"raw": "http://localhost:8081/api/v1/tickets/1",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -516,7 +516,7 @@
 										"api",
 										"v1",
 										"tickets",
-										"2"
+										"1"
 									]
 								}
 							},
@@ -589,7 +589,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"title\": \"No puedo acceder al correo\",\n    \"description\": \"El sistema rechaza mi contraseña.\",\n    \"requesterName\": \"Ana Pérez\",\n    \"requesterEmail\": \"ana@example.com\",\n    \"priority\": \"LOW\",\n    \"status\": \"RECHAZADO\"\n}",
+									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 2,\n  \"priority\": \"MEDIUM\",\n  \"status\": \"IN_PROGRESS\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"

@@ -25,6 +25,9 @@ public interface TicketMapper {
     @Mapping(target = "requesterPhoneNumber", source = "requester.phoneNumber")
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "supportAgentId", source = "assignedAgent.id")
+    @Mapping(target = "supportAgentName", source = "assignedAgent.name")
+    @Mapping(target = "supportAgentSurname", source = "assignedAgent.surname")
     TicketResponseDto toResponseDto(TicketEntity ticketEntity);
 
     List<TicketResponseDto> toResponseDtoList(List<TicketEntity> ticketEntities);

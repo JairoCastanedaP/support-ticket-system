@@ -23,6 +23,9 @@ public record TicketRequestDto (
         @Positive(message = "El identificador de la categoría debe ser positivo")
         Long categoryId,
 
+        @Positive(message = "El identificador del agente debe ser positivo")
+        Long supportAgentId,
+
         @NotBlank(message = "La prioridad es obligatoria")
         @Size(max = 20, message = "La prioridad no debe superar los 20 caracteres")
         String priority ,

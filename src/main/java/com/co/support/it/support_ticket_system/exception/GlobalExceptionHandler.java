@@ -62,4 +62,17 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
+    @ExceptionHandler(SupportAgentNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleSupportAgentNotFound(
+            SupportAgentNotFoundException exception
+    ) {
+        Map<String, String> response = Map.of(
+                "message",
+                exception.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
 }
