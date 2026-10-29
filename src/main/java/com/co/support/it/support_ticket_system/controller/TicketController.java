@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
 
 import java.net.URI;
 import java.util.List;
@@ -51,5 +52,11 @@ public class TicketController {
         return ResponseEntity.ok(
                 ticketService.update(id,ticketRequestDto)
         );
+    }
+    @GetMapping("/{id}/status-history")
+    public ResponseEntity<List<TicketStatusHistoryResponseDto>> findStatusHistory(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(ticketService.findStatusHistory(id));
     }
 }

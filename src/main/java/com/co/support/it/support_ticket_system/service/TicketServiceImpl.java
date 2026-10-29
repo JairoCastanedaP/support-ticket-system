@@ -7,6 +7,7 @@ import com.co.support.it.support_ticket_system.exception.CategoryNotFoundExcepti
 import com.co.support.it.support_ticket_system.exception.RequesterNotFoundException;
 import com.co.support.it.support_ticket_system.exception.TicketNotFoundException;
 import com.co.support.it.support_ticket_system.mapper.TicketMapper;
+import com.co.support.it.support_ticket_system.mapper.TicketStatusHistoryMapper;
 import com.co.support.it.support_ticket_system.repository.CategoryRepository;
 import com.co.support.it.support_ticket_system.repository.RequesterRepository;
 import com.co.support.it.support_ticket_system.repository.TicketRepository;
@@ -16,6 +17,12 @@ import com.co.support.it.support_ticket_system.entity.SupportAgentEntity;
 import com.co.support.it.support_ticket_system.exception.SupportAgentNotFoundException;
 import com.co.support.it.support_ticket_system.repository.SupportAgentRepository;
 
+import com.co.support.it.support_ticket_system.entity.TicketStatusHistoryEntity;
+import com.co.support.it.support_ticket_system.repository.TicketStatusHistoryRepository;
+
+import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -26,6 +33,8 @@ public class TicketServiceImpl implements TicketService {
     private final RequesterRepository requesterRepository;
     private final CategoryRepository categoryRepository;
     private final SupportAgentRepository supportAgentRepository;
+    private final TicketStatusHistoryRepository ticketStatusHistoryRepository;
+    private final TicketStatusHistoryMapper ticketStatusHistoryMapper;
     private final TicketMapper ticketMapper;
 
 
@@ -34,13 +43,17 @@ public class TicketServiceImpl implements TicketService {
             RequesterRepository requesterRepository,
             CategoryRepository categoryRepository,
             SupportAgentRepository supportAgentRepository,
-            TicketMapper ticketMapper
+            TicketStatusHistoryRepository ticketStatusHistoryRepository,
+            TicketMapper ticketMapper,
+            TicketStatusHistoryMapper ticketStatusHistoryMapper
     ) {
         this.ticketRepository = ticketRepository;
         this.requesterRepository = requesterRepository;
         this.categoryRepository = categoryRepository;
         this.supportAgentRepository = supportAgentRepository;
+        this.ticketStatusHistoryRepository = ticketStatusHistoryRepository;
         this.ticketMapper = ticketMapper;
+        this.ticketStatusHistoryMapper = ticketStatusHistoryMapper;
     }
 
     @Override
@@ -81,6 +94,8 @@ public class TicketServiceImpl implements TicketService {
         TicketEntity ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new TicketNotFoundException(id));
 
+        String previousStatus = ticket.getStatus();
+
         ticketMapper.updateEntityFromDto(updatedTicketRequestDto, ticket);
 
         ticket.setRequester(requesterRepository.findById(updatedTicketRequestDto.requesterId())
@@ -95,8 +110,28 @@ public class TicketServiceImpl implements TicketService {
                         : findSupportAgent(updatedTicketRequestDto.supportAgentId())
         );
 
+        if (!previousStatus.equals(ticket.getStatus())) {
+            TicketStatusHistoryEntity history = new TicketStatusHistoryEntity();
+            history.setTicket(ticket);
+            history.setPreviousStatus(previousStatus);
+            history.setNewStatus(ticket.getStatus());
+            history.setChangedAt(LocalDateTime.now());
+
+            ticketStatusHistoryRepository.save(history);
+        }
+
         TicketEntity updatedTicket = ticketRepository.save(ticket);
         return ticketMapper.toResponseDto(updatedTicket);
+    }
+    @Override
+    public List<TicketStatusHistoryResponseDto> findStatusHistory(Long ticketId) {
+        ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException(ticketId));
+
+        return ticketStatusHistoryMapper.toResponseDtoList(
+                ticketStatusHistoryRepository
+                        .findByTicket_IdOrderByChangedAtAsc(ticketId)
+        );
     }
 
     private SupportAgentEntity findSupportAgent(Long id) {
