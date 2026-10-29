@@ -475,6 +475,212 @@
 							"response": []
 						}
 					]
+				},
+				{
+					"name": "04-ticket-domain-model",
+					"item": [
+						{
+							"name": "ListTickets",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Ticket by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/2",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"2"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateTickets",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"El computador no enciende\",\n  \"description\": \"El equipo de escritorio no enciende al presionar el botón de encendido.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"priority\": \"HIGH\",\n  \"status\": \"OPEN\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateRequester",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Laura\",\n  \"surname\": \"Gómez\",\n  \"email\": \"laura.gomez@example.com\",\n  \"phoneNumber\": \"3001234567\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/requesters",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"requesters"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateTicket",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"No puedo acceder al correo\",\n    \"description\": \"El sistema rechaza mi contraseña.\",\n    \"requesterName\": \"Ana Pérez\",\n    \"requesterEmail\": \"ana@example.com\",\n    \"priority\": \"LOW\",\n    \"status\": \"RECHAZADO\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateTicketWIthException",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"No puedo acceder al correo\",\n  \"description\": \"El sistema rechaza mi contraseña.\",\n  \"requesterName\": \"Ana Pérez\",\n  \"requesterEmail\": \"ana@example.com\",\n  \"status\": \"APROBADO\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateTicketWIthException",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"title\": \"No puedo acceder al correo\",\n    \"description\": \"El sistema rechaza mi contraseña.\",\n    \"requesterName\": \"Ana Pérez\",\n    \"requesterEmail\": \"ana@example.com\",\n    \"priority\": \"LOW\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1"
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
