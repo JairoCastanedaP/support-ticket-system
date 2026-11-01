@@ -47,7 +47,7 @@ Las clases transversales, como el manejador global de excepciones, viven en exce
 - Plan provisional para el ejercicio de múltiples bases: MySQL para datos operativos de tickets y Oracle para datos maestros de solicitantes y agentes. La asignación queda pendiente de validar con el profesor y de confirmar el origen real de esos datos.
 - Cada base tendrá su configuración, pool de conexiones, entidades y repositorios. No crear relaciones JPA ni claves foráneas entre bases distintas; conservar identificadores externos y consultar cada fuente por separado.
 - Evitar operaciones que requieran una transacción atómica entre MySQL y Oracle. Definir qué respuesta aplica si una fuente no está disponible.
-- Consumir servicios externos mediante una responsabilidad de integración separada. Definir propósito, autenticación, tiempos de espera y tratamiento de fallos antes de implementar el cliente.
+- Consumir servicios externos mediante una responsabilidad de integración separada y clientes configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. Si se usan tokens, no registrarlos ni exponerlos en respuestas.
 
 ### Reutilización
 
@@ -58,8 +58,9 @@ Las clases transversales, como el manejador global de excepciones, viven en exce
 ### Configuración y seguridad
 
 - No subir contraseñas, tokens, claves ni datos personales reales al repositorio.
-- Usar variables de entorno o configuración local ignorada por Git para credenciales.
-- Mantener perfiles de desarrollo y despliegue explícitos. La autenticación/autorización puede planificarse como ampliación posterior, salvo que el profesor la solicite antes.
+- Usar variables de entorno o configuración local ignorada por Git para credenciales. No imprimir credenciales ni tokens en logs.
+- Mantener perfiles de desarrollo y despliegue explícitos y definir timeouts para llamadas externas, junto con el tratamiento de fallos de red y respuestas HTTP no exitosas.
+- Distinguir la autenticación de la aplicación ante un proveedor externo (por ejemplo, obtener y usar un token para una API) de la autenticación/autorización de usuarios en la API propia. Esta última puede planificarse como ampliación posterior, salvo que el profesor la solicite antes.
 
 ## 3. Stack tecnológico
 
@@ -110,6 +111,7 @@ No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap ll
 | Organización de paquetes | Estructura actual plana por responsabilidad bajo el paquete raíz; ampliar solo cuando una necesidad lo justifique |
 | Base de datos | MySQL propuesta; Oracle como segunda fuente candidata para datos maestros; distribución pendiente de confirmación |
 | Integración externa | Caso de uso y servicio proveedor pendientes de definir; candidato: consulta de información de activos de TI |
+| Autenticación externa | Aplicar solo si el proveedor elegido la requiere; gestionar credenciales fuera del repositorio y no registrar tokens |
 | Relaciones entre bases | Sin claves foráneas ni relaciones JPA cruzadas; usar identificadores y consultar la fuente propietaria |
 | JDK y Spring Boot | Pendientes de confirmación por discrepancia entre temario y ejemplos |
 | Interfaz de usuario | Fuera de alcance inicial; API REST probada con Postman |

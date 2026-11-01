@@ -32,7 +32,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 - Inicio de sesión, SSO y gestión avanzada de permisos.
 - Adjuntos e imágenes.
 - Chat en vivo.
-- Integración con un servicio externo útil para el soporte, pendiente de definir y planificada para una etapa posterior.
+- Integración con un servicio externo útil para el soporte, pendiente de definir y planificada para una etapa posterior. Si requiere credenciales o tokens, se manejarán de forma segura; esto no habilita por sí mismo login para la API propia.
 - Notificaciones por correo y recordatorios automáticos.
 - SLA configurable por cliente o múltiples organizaciones.
 - Microservicios y despliegue en AWS.
@@ -47,7 +47,7 @@ Se podrán agregar después si los temas del curso y el tiempo disponible lo per
 | Agente de soporte | Clasifica, prioriza, asigna, comenta y resuelve tickets |
 | Administrador | Mantiene categorías y datos de referencia del área de soporte |
 
-En el primer corte estos roles describen responsabilidades del sistema, pero no implican que ya exista autenticación. La forma de identificar a la persona que ejecuta cada operación es una decisión pendiente.
+En el primer corte estos roles describen responsabilidades del sistema, pero no implican que ya exista autenticación. La forma de identificar a la persona que ejecuta cada operación es una decisión pendiente. La autenticación de la aplicación ante un servicio externo es un asunto distinto y se definirá al seleccionar la integración.
 
 ## 5. Flujo principal
 
@@ -95,7 +95,7 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 - **Trazabilidad:** conservar quién/cuándo creó o actualizó un ticket y su historial de estados cuando los datos de identidad estén disponibles.
 - **Usabilidad para desarrollo:** endpoints documentados y ejemplos reproducibles en Postman.
 - **Portabilidad:** configuración externa a los fuentes; JDK, Spring Boot y base de datos fijados en el proyecto.
-- **Privacidad:** usar datos ficticios durante desarrollo y no registrar secretos o datos personales innecesarios.
+- **Privacidad y seguridad:** usar datos ficticios durante desarrollo, no registrar secretos o datos personales innecesarios y mantener credenciales/tokens de integraciones fuera del repositorio y de los logs. La autenticación/autorización de usuarios en la API propia queda fuera del primer MVP.
 - **Rendimiento básico:** listados paginados; consultas de indicadores agregadas en persistencia si el volumen lo requiere.
 - **Despliegue:** el sistema deberá poder empaquetarse y arrancarse de forma reproducible al llegar a la etapa de despliegue.
 
@@ -233,6 +233,6 @@ El primer incremento funcional estará listo cuando:
 - Confirmar si la evaluación exige Docker, despliegue cloud, correo, Quartz o Swagger/OpenAPI.
 - Definir si comentarios del solicitante y notas internas del agente tienen visibilidad distinta.
 - Aprobar las transiciones de estado, condiciones de cierre y reapertura, y si un cambio de estado exige comentario.
-- Definir qué servicio externo se consumirá. Candidato: catálogo de activos de TI para complementar tickets de hardware; especificar autenticación, timeout y comportamiento ante indisponibilidad.
+- Definir qué servicio externo se consumirá. Candidato: catálogo de activos de TI para complementar tickets de hardware; especificar autenticación ante el proveedor, timeout, tratamiento de errores HTTP/de red y comportamiento ante indisponibilidad. Mantener separada esta decisión de habilitar autenticación/autorización en la API propia.
 - Definir si el alcance requiere SLA y cómo medir el tiempo de atención.
 - Supplier solo se agrega como entidad si se implementa el escalamiento de tickets a proveedores externos.

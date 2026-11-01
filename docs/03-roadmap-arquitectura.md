@@ -13,10 +13,10 @@ La aplicación evoluciona como un monolito modular en capas. No se crearán copi
 | 01 | architecture/01-layered-foundation | Sesiones 1–2 | Esqueleto Spring Boot, capas y CRUD inicial de tickets | Completada |
 | 02 | architecture/02-service-layer | Sesión 6, fundamentos | Servicio de negocio entre controlador y repositorio | Completada |
 | 03 | architecture/03-dto-validation-mapping-exceptions | Sesiones 7–8, conceptos adelantados | DTOs, MapStruct, validación y manejo centralizado de 404 y 400 | Implementada; integración en develop por confirmar |
-| 04 | architecture/04-ticket-domain-model | Sesiones 3–4 | Modelo relacional y relaciones JPA para solicitantes, categorías, agentes y tickets; consultas paginadas | Siguiente |
+| 04 | architecture/04-ticket-domain-model | Sesiones 3–4 | Modelo relacional y relaciones JPA para solicitantes, categorías, agentes, tickets, comentarios e historial | En curso; entidades y relaciones principales presentes. Verificar consultas paginadas y criterios de cierre antes de integrar |
 | 05 | architecture/05-multiple-data-sources | Sesión 5 | Configuración de MySQL y Oracle con propiedad de datos definida, pools y repositorios separados | Planificada; decisiones por validar |
-| 06 | architecture/06-business-rules-workflow | Sesiones 6–7 | Asignación, transiciones de estado, comentarios, historial, transacciones y excepciones de negocio | Planificada |
-| 07 | architecture/07-external-integrations | Sesión 7 | Consumo de un servicio web útil para soporte, con autenticación si aplica y manejo de fallos | Planificada; servicio por definir |
+| 06 | architecture/06-business-rules-workflow | Sesiones 6–7 | Asignación, transiciones de estado, comentarios, historial, transacciones y excepciones de negocio | Parcialmente implementada en la rama actual; validar reglas y pruebas antes de integrar |
+| 07 | architecture/07-external-integrations | Sesión 7 | Cliente REST externo para un caso de soporte; autenticación ante el proveedor si aplica, configuración segura y manejo de fallos | Planificada; elegir proveedor y caso de uso. La sesión 07 del curso aporta un patrón de integración autenticada, no un requisito de login para esta API |
 | 08 | architecture/08-rest-documentation | Sesión 8 | Completar OpenAPI/Swagger, contratos, respuestas personalizadas y HATEOAS si aporta valor | Planificada; CRUD y errores básicos ya existen |
 | 09 | architecture/09-packaging-deployment | Sesión 9 | Empaque JAR/WAR y despliegue requerido; Docker/AWS si corresponde | Planificada |
 | 10 | architecture/10-course-demo | Sesión 10 | Demo reproducible, explicación de decisiones y retrospectiva | Planificada |
@@ -34,17 +34,19 @@ Crear la rama de arquitectura desde develop, implementar y verificar el incremen
 
 ### Etapa 04: modelo del dominio y persistencia
 
-Diseñar el esquema antes de modificar entidades. El modelo inicial candidato incluye Requester, Category, SupportAgent y Ticket. TicketComment y TicketStatusHistory se incorporarán cuando se implementen los casos de uso de comentarios y cambios de estado. No agregar Supplier salvo que se apruebe el flujo de escalamiento a proveedores.
-
-Mantener una sola base durante este incremento para validar el modelo y las relaciones. Aplicar relaciones JPA, restricciones y consultas paginadas.
+La rama actual ya contiene entidades para Requester, Category, SupportAgent, Ticket, TicketComment y TicketStatusHistory, además de sus relaciones JPA principales. Revisar las restricciones del modelo y completar o verificar consultas paginadas, filtros y ordenamiento antes de dar la etapa por cerrada. Mantener una sola base durante este incremento para validar el modelo y las relaciones. No agregar Supplier salvo que se apruebe el flujo de escalamiento a proveedores.
 
 ### Etapa 05: múltiples fuentes de datos
 
 Propuesta pendiente de validar: MySQL almacenaría tickets y datos operativos; Oracle sería fuente de datos maestros para solicitantes y agentes. Cada fuente tendría sus entidades, repositorios y configuración de conexión. Las referencias entre bases usarán identificadores, sin claves foráneas ni relaciones JPA cruzadas. Evitar transacciones que pretendan confirmar cambios atómicos en ambas bases.
 
-### Etapas 06–07: reglas e integración
+### Etapa 06: reglas y flujo de soporte
 
-Implementar asignación a agentes activos, transiciones permitidas, comentarios e historial de estado. Elegir después un servicio web externo con propósito verificable; el catálogo de activos de TI es candidato para incidentes de hardware. Definir autenticación, timeout, respuesta ante indisponibilidad y si el flujo debe continuar cuando la integración falla. Correo y Quartz/@Scheduled se agregan solo si el alcance lo justifica.
+La rama actual ya implementa asignación, comentarios, cambios de ticket e historial de estado con operaciones transaccionales. Confirmar que las transiciones permitidas y las condiciones de cierre reflejen las reglas aprobadas, y revisar los casos de error antes de marcar la etapa como terminada.
+
+### Etapa 07: integración externa y seguridad de credenciales
+
+La sesión 07 del curso muestra clientes REST separados por responsabilidad y un flujo que obtiene un token de un proveedor y lo envía como Bearer para consultar un perfil. Para este sistema, seleccionar un servicio externo con propósito verificable; el catálogo de activos de TI sigue siendo candidato para incidentes de hardware. Si el proveedor requiere autenticación, definir el ciclo de obtención/uso del token, tiempos de espera, errores HTTP y de red, y el comportamiento del flujo cuando no esté disponible. Guardar credenciales fuera del repositorio y no registrar contraseñas ni tokens. Esta integración no implica habilitar autenticación o autorización en los endpoints propios. Correo y Quartz/@Scheduled se agregan solo si el alcance lo justifica.
 
 ## 5. MVPs
 
@@ -61,9 +63,9 @@ Los MVPs se ajustarán a los criterios del profesor y a la disponibilidad de Ora
 1. Confirmar con el profesor las versiones de JDK y Spring Boot del entorno de evaluación.
 2. Confirmar que se requiere conexión simultánea a MySQL y Oracle y qué datos debe contener cada base.
 3. Definir el origen y la administración de solicitantes y agentes.
-4. Elegir el servicio externo, su propósito y el comportamiento ante errores.
-5. Confirmar si se evalúan autenticación, correo, Quartz, Swagger, HATEOAS, Docker o AWS.
-6. Definir la configuración local sin subir credenciales al repositorio.
+4. Elegir el servicio externo y su propósito; definir autenticación frente al proveedor, timeouts, tratamiento de errores y comportamiento ante indisponibilidad.
+5. Confirmar si se evalúan autenticación de la API propia, correo, Quartz, Swagger, HATEOAS, Docker o AWS.
+6. Definir la configuración local con secretos fuera del repositorio y sin registrarlos en logs.
 
 ## 7. Criterios para integrar una etapa
 
