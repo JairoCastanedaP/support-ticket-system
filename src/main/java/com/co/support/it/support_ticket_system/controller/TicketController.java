@@ -5,6 +5,10 @@ import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
@@ -25,8 +29,26 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TicketResponseDto>> findAll(){
-        return ResponseEntity.ok(ticketService.findAll());
+    public ResponseEntity<Page<TicketResponseDto>> findAll(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long supportAgentId,
+            @PageableDefault(
+                    size = 20,
+                    sort = "id",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                ticketService.findAll(
+                        status,
+                        priority,
+                        categoryId,
+                        supportAgentId,
+                        pageable
+                )
+        );
     }
 
     @GetMapping("/{id}")
@@ -58,5 +80,11 @@ public class TicketController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(ticketService.findStatusHistory(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        ticketService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

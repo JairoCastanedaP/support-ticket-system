@@ -34,7 +34,7 @@ public class TicketCommentServiceImpl implements TicketCommentService {
 
     @Override
     public List<TicketCommentResponseDto> findByTicketId(Long ticketId) {
-        ticketRepository.findById(ticketId)
+        ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException(ticketId));
 
         return ticketCommentMapper.toResponseDtoList(
@@ -48,7 +48,7 @@ public class TicketCommentServiceImpl implements TicketCommentService {
             Long ticketId,
             TicketCommentRequestDto requestDto
     ) {
-        TicketEntity ticket = ticketRepository.findById(ticketId)
+        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException(ticketId));
 
         TicketCommentEntity comment = ticketCommentMapper.toEntity(requestDto);

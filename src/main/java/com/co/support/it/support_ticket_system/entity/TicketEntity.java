@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "tickets")
 @Getter
@@ -40,4 +42,10 @@ public class TicketEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_agent_id")
     private SupportAgentEntity assignedAgent;
+
+    @Column(name = "is_active", nullable = false)
+    private boolean active = true;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

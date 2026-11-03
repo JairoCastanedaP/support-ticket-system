@@ -11,6 +11,9 @@ import com.co.support.it.support_ticket_system.mapper.TicketStatusHistoryMapper;
 import com.co.support.it.support_ticket_system.repository.CategoryRepository;
 import com.co.support.it.support_ticket_system.repository.RequesterRepository;
 import com.co.support.it.support_ticket_system.repository.TicketRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.co.support.it.support_ticket_system.entity.SupportAgentEntity;
@@ -57,16 +60,62 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public List<TicketResponseDto> findAll() {
-        return ticketMapper.toResponseDtoList(ticketRepository.findAll());
+    public Page<TicketResponseDto> findAll(
+            String status,
+            String priority,
+            Long categoryId,
+            Long supportAgentId,
+            Pageable pageable
+    ) {
+        Specification<TicketEntity> spec =
+                (root, query, cb) -> cb.and(
+                        cb.isTrue(root.get("active")),
+                        cb.isNull(root.get("deletedAt"))
+                );
+
+        if (status != null && !status.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("status"), status));
+        }
+
+        if (priority != null && !priority.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("priority"), priority));
+        }
+
+        if (categoryId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("category").get("id"), categoryId));
+        }
+
+        if (supportAgentId != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("assignedAgent").get("id"), supportAgentId));
+        }
+
+        return ticketRepository.findAll(spec, pageable)
+                .map(ticketMapper::toResponseDto);
     }
 
     @Override
     public TicketResponseDto findById(Long id) {
-        TicketEntity ticket = ticketRepository.findById(id)
+        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new TicketNotFoundException(id));
 
         return ticketMapper.toResponseDto(ticket);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        TicketEntity ticket =
+                ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
+                        .orElseThrow(() -> new TicketNotFoundException(id));
+
+        ticket.setActive(false);
+        ticket.setDeletedAt(LocalDateTime.now());
+
+        ticketRepository.save(ticket);
     }
 
     @Override
@@ -91,7 +140,7 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public TicketResponseDto update(Long id, TicketRequestDto updatedTicketRequestDto) {
-        TicketEntity ticket = ticketRepository.findById(id)
+        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new TicketNotFoundException(id));
 
         String previousStatus = ticket.getStatus();
@@ -125,7 +174,7 @@ public class TicketServiceImpl implements TicketService {
     }
     @Override
     public List<TicketStatusHistoryResponseDto> findStatusHistory(Long ticketId) {
-        ticketRepository.findById(ticketId)
+        ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException(ticketId));
 
         return ticketStatusHistoryMapper.toResponseDtoList(
