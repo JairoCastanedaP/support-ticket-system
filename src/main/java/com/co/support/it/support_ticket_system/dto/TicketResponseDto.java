@@ -1,7 +1,10 @@
 package com.co.support.it.support_ticket_system.dto;
 
+import java.time.LocalDateTime;
+
 public record TicketResponseDto(
         Long id,
+        String ticketNumber,
         String title,
         String description,
         Long requesterId,
@@ -15,6 +18,8 @@ public record TicketResponseDto(
         String supportAgentName,
         String supportAgentSurname,
         String priority,
-        String status
+        String status,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
 }

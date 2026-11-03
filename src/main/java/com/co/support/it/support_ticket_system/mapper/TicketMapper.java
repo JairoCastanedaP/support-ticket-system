@@ -16,6 +16,11 @@ public interface TicketMapper {
     @Mapping(target = "requester", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "assignedAgent", ignore = true)
+    @Mapping(target = "ticketNumber", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "active", ignore = true)
+    @Mapping(target = "deletedAt", ignore = true)
     TicketEntity toEntity(TicketRequestDto ticketRequestDto);
 
     @Mapping(target = "requesterId", source = "requester.id")
@@ -36,6 +41,11 @@ public interface TicketMapper {
     @Mapping(target = "requester", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "assignedAgent", ignore = true)
+    @Mapping(target = "ticketNumber", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "active", ignore = true)
+    @Mapping(target = "deletedAt", ignore = true)
     void updateEntityFromDto(
             TicketRequestDto ticketRequestDto,
             @MappingTarget TicketEntity ticketEntity

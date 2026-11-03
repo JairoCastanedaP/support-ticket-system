@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "tickets")
@@ -18,6 +19,9 @@ public class TicketEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ticket_id")
     private Long id;
+
+    @Column(name = "ticket_number", nullable = false, unique = true, length = 40)
+    private String ticketNumber;
 
     @Column(nullable = false, length = 150)
     private String title;
@@ -46,6 +50,29 @@ public class TicketEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @PrePersist
+    private void beforeInsert() {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (ticketNumber == null || ticketNumber.isBlank()) {
+            ticketNumber = "TCK-" + UUID.randomUUID();
+        }
+
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    private void beforeUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

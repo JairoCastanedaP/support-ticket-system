@@ -501,6 +501,132 @@
 							"response": []
 						},
 						{
+							"name": "ListComments",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ListsStatusHistory",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ListTickets Copy",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ListSupportAgents",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/support-agents",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"support-agents"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ListCategories",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "ListRequesters",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/requesters",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"requesters"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Find Ticket by Id",
 							"request": {
 								"method": "GET",
@@ -523,6 +649,72 @@
 							"response": []
 						},
 						{
+							"name": "FindSUpportAgents by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/support-agents/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"support-agents",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Requester by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/requesters/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"requesters",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Find Category by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "CreateTickets",
 							"request": {
 								"method": "POST",
@@ -530,6 +722,66 @@
 								"body": {
 									"mode": "raw",
 									"raw": "{\n  \"title\": \"El computador no enciende\",\n  \"description\": \"El equipo de escritorio no enciende al presionar el botón de encendido.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"priority\": \"HIGH\",\n  \"status\": \"OPEN\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateSupportAgents",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Carlos\",\n  \"surname\": \"Ramírez\",\n  \"email\": \"carlos.ramirez@example.com\",\n  \"phoneNumber\": \"3009876543\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/support-agents",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"support-agents"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateTicketsWithAll",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"No puedo conectarme a la red corporativa V2\",\n  \"description\": \"El equipo dejó de conectarse a la red Wi-Fi de la oficina V2.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"supportAgentId\": 1,\n  \"priority\": \"HIGH\",\n  \"status\": \"OPEN\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -583,13 +835,168 @@
 							"response": []
 						},
 						{
+							"name": "CreateCategory",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Sistema Operativo\",\n  \"description\": \"Error con las aplicaciones\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "CreateComment",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"comment\": \"Se verificó la conexión y el equipo volvió a conectarse a la red.\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1/comments",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1",
+										"comments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "UpdateTicket",
 							"request": {
 								"method": "PUT",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 2,\n  \"priority\": \"MEDIUM\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"priority\": \"MEDIUM\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateTicketWIthAgent",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"No puedo conectarme a la red corporativa\",\n  \"description\": \"El agente está revisando el problema de conexión.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"supportAgentId\": 1,\n  \"priority\": \"HIGH\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateTicketWIthoutAgent",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"No puedo conectarme a la red corporativa\",\n  \"description\": \"El agente está revisando el problema de conexión.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"supportAgentId\": null,\n  \"priority\": \"HIGH\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "UpdateTicketWIthException",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 4,\n  \"priority\": \"MEDIUM\",\n  \"status\": \"IN_PROGRESS\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
