@@ -42,6 +42,7 @@ Las clases transversales, como el manejador global de excepciones, viven en exce
 - Usar claves foráneas y restricciones para proteger la integridad de los datos que viven en una misma base.
 - Implementar transacciones en operaciones que actualicen varios registros dentro de una misma base.
 - Conservar el historial de cambios de estado cuando sea necesario para auditoría.
+- Eliminar tickets de forma lógica: al retirarlos, marcar `active` como `false` y guardar `deletedAt`; mantener ambos valores consistentes, conservar comentarios e historial y excluir los tickets retirados de las consultas normales.
 - Añadir paginación y ordenamiento a las consultas de listas.
 - Implementar auditoría automática solo después de verificar listeners, habilitación y origen de usuario/fecha.
 - Plan provisional para el ejercicio de múltiples bases: MySQL para datos operativos de tickets y Oracle para datos maestros de solicitantes y agentes. La asignación queda pendiente de validar con el profesor y de confirmar el origen real de esos datos.

@@ -18,6 +18,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 ### Incluido en el núcleo
 
 - Crear y consultar tickets de soporte.
+- Retirar tickets mediante eliminación lógica, conservando sus comentarios e historial.
 - Clasificar tickets por categoría y prioridad.
 - Asignar y reasignar un responsable de soporte.
 - Registrar comentarios y cambios de estado.
@@ -76,6 +77,7 @@ En el primer corte estos roles describen responsabilidades del sistema, pero no 
 | RF-10 | Consultar cantidades por estado/categoría y tiempos promedio de resolución | Should |
 | RF-11 | Registrar automáticamente fechas de creación y actualización | Should |
 | RF-12 | Notificar por correo o tarea programada sobre asignaciones y tickets pendientes | Could; etapa posterior |
+| RF-13 | Eliminar lógicamente un ticket, excluirlo de consultas normales y conservar su registro e historial | Must |
 
 ### Transiciones iniciales propuestas
 
@@ -141,6 +143,8 @@ erDiagram
         varchar status
         datetime created_at
         datetime updated_at
+        boolean is_active
+        datetime deleted_at
         text resolution_note
         bigint requester_id FK
         bigint category_id FK
@@ -182,7 +186,7 @@ erDiagram
 ### Campos y restricciones de negocio
 
 - Category: nombre obligatorio y único, descripción opcional y estado activo/inactivo.
-- Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización.
+- Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización. `is_active` y `deleted_at` registran la eliminación lógica: activo implica `is_active = true` y `deleted_at = null`; eliminado implica `is_active = false` y una fecha en `deleted_at`.
 - Priority y status se restringen a valores acordados por el negocio; el catálogo exacto se definirá antes de implementar sus reglas.
 - resolution_note se exige al resolver o cerrar el ticket según la política que se confirme.
 - TicketComment almacena contenido, fecha, autor y visibilidad. author_type diferencia solicitante y agente; author_id identifica a la persona autora.
@@ -222,6 +226,7 @@ El primer incremento funcional estará listo cuando:
 5. El ticket pueda asignarse a un agente activo y el cambio quede registrado.
 6. Una transición no permitida devuelva un conflicto controlado, sin dejar datos parcialmente actualizados.
 7. Los ejemplos de uso estén guardados en una colección de Postman o documentados en el repositorio.
+8. Al eliminar un ticket, la API responda `204 No Content`, lo excluya del listado normal y responda `404 Not Found` al consultarlo, modificarlo o agregarle comentarios; sus datos e historial se conservan en la base.
 
 ## 11. Supuestos y preguntas abiertas
 
