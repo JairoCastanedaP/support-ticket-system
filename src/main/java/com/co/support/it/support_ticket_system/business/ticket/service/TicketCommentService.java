@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.service;
+package com.co.support.it.support_ticket_system.business.ticket.service;
 
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentResponseDto;

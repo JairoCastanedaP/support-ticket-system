@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.exception;
+package com.co.support.it.support_ticket_system.business.ticket.exception;
 
 public class TicketNotFoundException extends RuntimeException{
 

@@ -1,12 +1,12 @@
-package com.co.support.it.support_ticket_system.service;
+package com.co.support.it.support_ticket_system.business.ticket.service;
 
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.entity.TicketCommentEntity;
 import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import com.co.support.it.support_ticket_system.business.ticket.exception.TicketNotFoundException;
-import com.co.support.it.support_ticket_system.mapper.TicketCommentMapper;
-import com.co.support.it.support_ticket_system.repository.TicketCommentRepository;
+import com.co.support.it.support_ticket_system.business.ticket.mapper.TicketCommentMapper;
+import com.co.support.it.support_ticket_system.business.ticket.repository.TicketCommentRepository;
 import com.co.support.it.support_ticket_system.business.ticket.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,8 +1,8 @@
-package com.co.support.it.support_ticket_system.controller;
+package com.co.support.it.support_ticket_system.business.ticket.controller;
 
-import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
-import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
-import com.co.support.it.support_ticket_system.service.TicketService;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -11,11 +11,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @RestController

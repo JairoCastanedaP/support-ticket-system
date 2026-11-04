@@ -1,14 +1,13 @@
-package com.co.support.it.support_ticket_system.service;
+package com.co.support.it.support_ticket_system.business.ticket.service;
 
-import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
-import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
-import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TicketService {
     Page<TicketResponseDto> findAll(

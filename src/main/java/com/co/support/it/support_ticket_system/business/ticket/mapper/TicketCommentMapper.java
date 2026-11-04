@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.mapper;
+package com.co.support.it.support_ticket_system.business.ticket.mapper;
 
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentResponseDto;

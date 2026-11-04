@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.entity;
+package com.co.support.it.support_ticket_system.business.ticket.entity;
 
 
 

@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.repository;
+package com.co.support.it.support_ticket_system.business.ticket.repository;
 
 import com.co.support.it.support_ticket_system.business.ticket.entity.TicketCommentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;

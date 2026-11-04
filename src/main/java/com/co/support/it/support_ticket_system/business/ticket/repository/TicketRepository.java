@@ -1,6 +1,6 @@
-package com.co.support.it.support_ticket_system.repository;
+package com.co.support.it.support_ticket_system.business.ticket.repository;
 
-import com.co.support.it.support_ticket_system.entity.TicketEntity;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

@@ -1,16 +1,16 @@
-package com.co.support.it.support_ticket_system.service;
+package com.co.support.it.support_ticket_system.business.ticket.service;
 
-import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
-import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
-import com.co.support.it.support_ticket_system.entity.TicketEntity;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
 import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
-import com.co.support.it.support_ticket_system.exception.TicketNotFoundException;
-import com.co.support.it.support_ticket_system.mapper.TicketMapper;
-import com.co.support.it.support_ticket_system.mapper.TicketStatusHistoryMapper;
+import com.co.support.it.support_ticket_system.business.ticket.exception.TicketNotFoundException;
+import com.co.support.it.support_ticket_system.business.ticket.mapper.TicketMapper;
+import com.co.support.it.support_ticket_system.business.ticket.mapper.TicketStatusHistoryMapper;
 import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
 import com.co.support.it.support_ticket_system.business.requester.repository.RequesterRepository;
-import com.co.support.it.support_ticket_system.repository.TicketRepository;
+import com.co.support.it.support_ticket_system.business.ticket.repository.TicketRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,10 +20,10 @@ import com.co.support.it.support_ticket_system.business.supportagent.entity.Supp
 import com.co.support.it.support_ticket_system.business.supportagent.exception.SupportAgentNotFoundException;
 import com.co.support.it.support_ticket_system.business.supportagent.repository.SupportAgentRepository;
 
-import com.co.support.it.support_ticket_system.entity.TicketStatusHistoryEntity;
-import com.co.support.it.support_ticket_system.repository.TicketStatusHistoryRepository;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketStatusHistoryEntity;
+import com.co.support.it.support_ticket_system.business.ticket.repository.TicketStatusHistoryRepository;
 
-import com.co.support.it.support_ticket_system.dto.TicketStatusHistoryResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 
 import java.time.LocalDateTime;
 import java.util.List;

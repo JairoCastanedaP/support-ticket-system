@@ -1,8 +1,8 @@
-package com.co.support.it.support_ticket_system.mapper;
+package com.co.support.it.support_ticket_system.business.ticket.mapper;
 
-import com.co.support.it.support_ticket_system.dto.TicketRequestDto;
-import com.co.support.it.support_ticket_system.dto.TicketResponseDto;
-import com.co.support.it.support_ticket_system.entity.TicketEntity;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;

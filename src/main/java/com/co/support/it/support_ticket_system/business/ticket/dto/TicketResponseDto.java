@@ -1,4 +1,4 @@
-package com.co.support.it.support_ticket_system.dto;
+package com.co.support.it.support_ticket_system.business.ticket.dto;
 
 import java.time.LocalDateTime;
 
