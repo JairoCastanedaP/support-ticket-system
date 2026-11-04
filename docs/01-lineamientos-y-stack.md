@@ -10,33 +10,24 @@
 
 - Mantener una aplicación **monolítica modular**. No introducir microservicios como parte de los MVP iniciales.
 - Separar responsabilidades en las capas de **presentación**, **negocio**, **persistencia** y **base de datos**.
-- Organizar el código por funcionalidad y mantener visibles las capas dentro de cada funcionalidad. La propuesta de paquetes inicial aparece en la siguiente sección; las preocupaciones transversales viven en `shared/`.
+- Conservar la estructura de paquetes actual bajo com.co.support.it.support_ticket_system (controller, entity, repository, service, dto, mapper y exception). Los cambios de arquitectura deben evolucionar esa estructura de forma gradual.
 - Permitir dependencias hacia adentro: el controlador de presentación delega en un servicio de negocio; el servicio aplica reglas y coordina la persistencia; los repositorios acceden a la base de datos. El controlador no debe ejecutar consultas JPA ni contener reglas de negocio.
-- Mantener Customer/Supplier como referencias de aprendizaje, no como entidades obligatorias del producto. El dominio propio será el de tickets de soporte.
+- Tratar Customer y Supplier del ejemplo docente como referencias para aprender conceptos JPA, no como entidades obligatorias. Modelar los conceptos propios del negocio: Requester, SupportAgent, Category y Ticket. Supplier se incorporará solo si se aprueba un caso de escalamiento a proveedores.
 
-### Organización de referencia
+### Organización de paquetes
 
-```text
-features/
-└── ticket/
-    ├── presentation/
-    │   ├── controller/
-    │   └── dto/
-    ├── business/
-    │   ├── service/
-    │   └── domain/
-    ├── persistence/
-    │   ├── entity/
-    │   └── repository/
-    └── mapper/
-shared/
-  config/
-  exceptions/
-  constants/
-```
+Se conserva la estructura que ya usa la aplicación:
 
-La estructura puede crecer cuando aparezcan funcionalidades con reglas propias, por ejemplo `category/` o `reporting/`. No es necesario crear todos esos módulos desde el primer commit.
+    com.co.support.it.support_ticket_system
+    ├── controller
+    ├── entity
+    ├── repository
+    ├── service
+    ├── dto
+    ├── mapper
+    └── exception
 
+Las clases transversales, como el manejador global de excepciones, viven en exception. Se podrán agregar paquetes cuando una responsabilidad nueva lo justifique, sin reorganizar todo el código de una sola vez.
 ### API y contratos
 
 - Exponer recursos REST bajo una ruta versionada, inicialmente `/api/v1`.
@@ -48,11 +39,16 @@ La estructura puede crecer cuando aparezcan funcionalidades con reglas propias, 
 ### Persistencia y datos
 
 - Diseñar primero el modelo relacional y sus restricciones antes de agregar relaciones JPA complejas.
-- Usar claves foráneas y restricciones de base de datos para proteger la integridad de los datos.
-- Introducir transacciones en operaciones de negocio que actualicen más de un registro.
-- Conservar el historial de cambios de estado de un ticket; no borrar físicamente registros de negocio si deben permanecer para auditoría.
-- Añadir paginación y ordenamiento a las consultas de listas antes de que crezca el volumen de datos.
-- Implementar auditoría automática solo cuando estén configurados y verificados los listeners, la habilitación de auditoría y el origen de usuario/fecha correspondiente.
+- Usar claves foráneas y restricciones para proteger la integridad de los datos que viven en una misma base.
+- Implementar transacciones en operaciones que actualicen varios registros dentro de una misma base.
+- Conservar el historial de cambios de estado cuando sea necesario para auditoría.
+- Eliminar tickets de forma lógica: al retirarlos, marcar `active` como `false` y guardar `deletedAt`; mantener ambos valores consistentes, conservar comentarios e historial y excluir los tickets retirados de las consultas normales.
+- Añadir paginación y ordenamiento a las consultas de listas.
+- Implementar auditoría automática solo después de verificar listeners, habilitación y origen de usuario/fecha.
+- Plan provisional para el ejercicio de múltiples bases: MySQL para datos operativos de tickets y Oracle para datos maestros de solicitantes y agentes. La asignación queda pendiente de validar con el profesor y de confirmar el origen real de esos datos.
+- Cada base tendrá su configuración, pool de conexiones, entidades y repositorios. No crear relaciones JPA ni claves foráneas entre bases distintas; conservar identificadores externos y consultar cada fuente por separado.
+- Evitar operaciones que requieran una transacción atómica entre MySQL y Oracle. Definir qué respuesta aplica si una fuente no está disponible.
+- Consumir servicios externos mediante una responsabilidad de integración separada y clientes configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. Si se usan tokens, no registrarlos ni exponerlos en respuestas.
 
 ### Reutilización
 
@@ -63,8 +59,9 @@ La estructura puede crecer cuando aparezcan funcionalidades con reglas propias, 
 ### Configuración y seguridad
 
 - No subir contraseñas, tokens, claves ni datos personales reales al repositorio.
-- Usar variables de entorno o configuración local ignorada por Git para credenciales.
-- Mantener perfiles de desarrollo y despliegue explícitos. La autenticación/autorización puede planificarse como ampliación posterior, salvo que el profesor la solicite antes.
+- Usar variables de entorno o configuración local ignorada por Git para credenciales. No imprimir credenciales ni tokens en logs.
+- Mantener perfiles de desarrollo y despliegue explícitos y definir timeouts para llamadas externas, junto con el tratamiento de fallos de red y respuestas HTTP no exitosas.
+- Distinguir la autenticación de la aplicación ante un proveedor externo (por ejemplo, obtener y usar un token para una API) de la autenticación/autorización de usuarios en la API propia. Esta última puede planificarse como ampliación posterior, salvo que el profesor la solicite antes.
 
 ## 3. Stack tecnológico
 
@@ -80,8 +77,9 @@ La estructura puede crecer cuando aparezcan funcionalidades con reglas propias, 
 | Validación | Jakarta Bean Validation / Spring Boot Validation | Validación declarativa de DTOs |
 | Mapeo | MapStruct | Conversión entre DTOs y entidades cuando se incorpore esa capa |
 | Productividad | Lombok, de forma moderada | Reducir código repetitivo |
-| Base relacional | MySQL como candidata principal del proyecto | Persistencia integrada del MVP |
-| Base auxiliar | H2 para pruebas o ejecuciones locales rápidas, si resulta conveniente | Desarrollo y verificaciones aisladas |
+| Base operativa candidata | MySQL | Tickets, categorías, comentarios e historial |
+| Base de datos de referencia candidata | Oracle | Solicitantes y agentes, sujeto a validar disponibilidad y propiedad de esos datos |
+| Base local de desarrollo | H2, si resulta conveniente | Ejecuciones rápidas; no sustituye la verificación de MySQL y Oracle |
 | Pruebas | Dependencias de prueba administradas por Spring Boot | Pruebas unitarias y de integración cuando se implemente cada etapa |
 | Cliente REST | Postman | Ejercitar endpoints y guardar colecciones de solicitudes |
 | Control de versiones | Git y GitHub | Historial por ramas arquitectónicas y etiquetas de MVP |
@@ -103,7 +101,7 @@ No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap ll
 - **Negocio e integración:** MapStruct/ModelMapper, consumo de servicios web, tokens, Java Mail, Quartz y `@Scheduled`.
 - **REST:** Swagger/OpenAPI, `@ControllerAdvice`, versionamiento de API, respuestas personalizadas y HATEOAS cuando aporte valor.
 - **Empaque y despliegue:** JAR/WAR, Apache Tomcat, JBoss EAP/WildFly, Docker, Docker Compose y AWS Elastic Beanstalk.
-- **Motores mencionados:** Oracle, MySQL y PostgreSQL. Para este proyecto se elegirá uno como base principal y no se intentará soportarlos todos en el MVP.
+- Motores mencionados: Oracle, MySQL y PostgreSQL. Para el caso de dos bases se propone inicialmente MySQL y Oracle; PostgreSQL queda fuera de este alcance salvo que el profesor indique otra cosa.
 - **Herramientas auxiliares:** IDE (IntelliJ IDEA, STS o Eclipse) y JSONLint para revisar JSON cuando sea necesario.
 
 ## 5. Decisiones técnicas registradas
@@ -111,8 +109,11 @@ No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap ll
 | Decisión | Estado inicial |
 |---|---|
 | Estilo arquitectónico | Monolito modular en capas |
-| Organización de paquetes | Por funcionalidad, con subpaquetes por responsabilidad |
-| Base de datos | MySQL propuesta; pendiente de confirmar con el profesor |
+| Organización de paquetes | Estructura actual plana por responsabilidad bajo el paquete raíz; ampliar solo cuando una necesidad lo justifique |
+| Base de datos | MySQL propuesta; Oracle como segunda fuente candidata para datos maestros; distribución pendiente de confirmación |
+| Integración externa | Caso de uso y servicio proveedor pendientes de definir; candidato: consulta de información de activos de TI |
+| Autenticación externa | Aplicar solo si el proveedor elegido la requiere; gestionar credenciales fuera del repositorio y no registrar tokens |
+| Relaciones entre bases | Sin claves foráneas ni relaciones JPA cruzadas; usar identificadores y consultar la fuente propietaria |
 | JDK y Spring Boot | Pendientes de confirmación por discrepancia entre temario y ejemplos |
 | Interfaz de usuario | Fuera de alcance inicial; API REST probada con Postman |
 | Autenticación | Fuera del primer MVP; se revisará si se exige en el curso |
