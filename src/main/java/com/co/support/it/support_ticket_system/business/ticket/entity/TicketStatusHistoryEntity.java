@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.entity;
 
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

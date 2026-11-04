@@ -1,7 +1,7 @@
 package com.co.support.it.support_ticket_system.service;
 
-import com.co.support.it.support_ticket_system.dto.TicketCommentRequestDto;
-import com.co.support.it.support_ticket_system.dto.TicketCommentResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentResponseDto;
 
 import java.util.List;
 
