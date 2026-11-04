@@ -103,7 +103,7 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 
 ## 8. Modelo relacional inicial
 
-El siguiente es el modelo lógico propuesto para el dominio de soporte. Durante la etapa de relaciones JPA se implementará primero con una sola base de datos relacional, para validar claves foráneas y cardinalidades. La distribución entre MySQL y Oracle se tratará en una etapa posterior.
+El siguiente es el modelo lógico objetivo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. Los campos de resolución, autoría y visibilidad indicados como pendientes se completarán en la etapa 06, junto con las reglas del flujo. La distribución entre MySQL y Oracle se tratará en una etapa posterior.
 
 ~~~mermaid
 erDiagram
@@ -188,10 +188,10 @@ erDiagram
 - Category: nombre obligatorio y único, descripción opcional y estado activo/inactivo.
 - Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización. `is_active` y `deleted_at` registran la eliminación lógica: activo implica `is_active = true` y `deleted_at = null`; eliminado implica `is_active = false` y una fecha en `deleted_at`.
 - Priority y status se restringen a valores acordados por el negocio; el catálogo exacto se definirá antes de implementar sus reglas.
-- resolution_note se exige al resolver o cerrar el ticket según la política que se confirme.
-- TicketComment almacena contenido, fecha, autor y visibilidad. author_type diferencia solicitante y agente; author_id identifica a la persona autora.
-- TicketStatusHistory conserva estado anterior/nuevo, fecha, motivo y actor. actor_type y actor_id identifican quién realizó el cambio.
-- Los identificadores de autor y actor son referencias polimórficas; su validación corresponde al servicio mientras no exista una entidad común de identidad.
+- `resolution_note` se incorporará en la etapa 06 y se exigirá al resolver o cerrar el ticket según la política que se confirme.
+- TicketComment ya almacena ticket, contenido y fecha. `author_type`, `author_id` y `visibility` se incorporarán en la etapa 06, cuando se defina la identidad y visibilidad de comentarios.
+- TicketStatusHistory ya conserva ticket, estado anterior/nuevo y fecha. `reason`, `actor_type` y `actor_id` se incorporarán en la etapa 06, cuando se definan las reglas de transición y la identidad de quien ejecuta cada cambio.
+- Los identificadores de autor y actor serán referencias polimórficas; su validación corresponderá al servicio mientras no exista una entidad común de identidad.
 
 ### Persistencia y posible distribución entre bases
 
@@ -207,7 +207,7 @@ Supplier no forma parte del modelo inicial. Se reconsiderará si se aprueba un c
 ## 9. Reglas de negocio iniciales
 
 - El título, la descripción, la categoría y un contacto válido son obligatorios para crear el ticket.
-- El sistema asigna el estado inicial `OPEN` y la fecha de creación; el cliente no puede elegirlos libremente.
+- Regla objetivo para la etapa 06: el sistema asignará el estado inicial `OPEN` y el cliente no podrá elegirlo libremente. Actualmente, el contrato de creación aún recibe `status` en la solicitud; se alineará al implementar las reglas del flujo.
 - Un ticket asignado debe tener un agente activo.
 - No se puede cerrar un ticket sin registrar motivo o nota de resolución, según la transición aprobada.
 - Todo cambio de estado debe generar un registro de historial.

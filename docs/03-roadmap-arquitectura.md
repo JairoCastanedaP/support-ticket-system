@@ -13,7 +13,7 @@ La aplicación evoluciona como un monolito modular en capas. No se crearán copi
 | 01 | architecture/01-layered-foundation | Sesiones 1–2 | Esqueleto Spring Boot, capas y CRUD inicial de tickets | Completada |
 | 02 | architecture/02-service-layer | Sesión 6, fundamentos | Servicio de negocio entre controlador y repositorio | Completada |
 | 03 | architecture/03-dto-validation-mapping-exceptions | Sesiones 7–8, conceptos adelantados | DTOs, MapStruct, validación y manejo centralizado de 404 y 400 | Implementada; integración en develop por confirmar |
-| 04 | architecture/04-ticket-domain-model | Sesiones 3–4 | Modelo relacional y relaciones JPA; número y fechas del ticket; filtros, ordenamiento, paginación y eliminación lógica | Implementación en revisión final; falta validar el contrato/documentación y cerrar la integración |
+| 04 | architecture/04-ticket-domain-model | Sesiones 3–4 | Modelo relacional y relaciones JPA; número y fechas del ticket; filtros, ordenamiento, paginación y eliminación lógica | Completada y verificada manualmente con Postman en la rama actual |
 | 05 | architecture/05-multiple-data-sources | Sesión 5 | Configuración de MySQL y Oracle con propiedad de datos definida, pools y repositorios separados | Planificada; decisiones por validar |
 | 06 | architecture/06-business-rules-workflow | Sesiones 6–7 | Asignación, transiciones de estado, comentarios, historial, transacciones y excepciones de negocio | Parcialmente implementada en la rama actual; validar reglas y pruebas antes de integrar |
 | 07 | architecture/07-external-integrations | Sesión 7 | Cliente REST externo para un caso de soporte; autenticación ante el proveedor si aplica, configuración segura y manejo de fallos | Planificada; elegir proveedor y caso de uso. La sesión 07 del curso aporta un patrón de integración autenticada, no un requisito de login para esta API |
@@ -34,7 +34,7 @@ Crear la rama de arquitectura desde develop, implementar y verificar el incremen
 
 ### Etapa 04: modelo del dominio y persistencia
 
-La rama actual contiene entidades para Requester, Category, SupportAgent, Ticket, TicketComment y TicketStatusHistory, con sus relaciones JPA principales. Ticket ya incluye un número legible único, fechas de creación/actualización y borrado lógico mediante `active` y `deletedAt`. El listado de tickets admite filtros, ordenamiento y paginación; la colección de Postman incluye las solicitudes de consulta y eliminación. Antes de cerrar la etapa, confirmar que el diagrama y los contratos reflejan estos campos y que la verificación final cubre el acceso a tickets eliminados. Mantener una sola base durante este incremento para validar el modelo y las relaciones. No agregar Supplier salvo que se apruebe el flujo de escalamiento a proveedores.
+La rama actual contiene entidades para Requester, Category, SupportAgent, Ticket, TicketComment y TicketStatusHistory, con sus relaciones JPA principales. Ticket incluye número legible único, fechas de creación/actualización y borrado lógico mediante `active` y `deletedAt`. El listado admite filtros, ordenamiento y paginación. La creación, consulta paginada, modificación de fechas y eliminación lógica se verificaron manualmente con Postman. Los datos de auditoría y las reglas avanzadas del flujo quedan registrados para la etapa 06. Mantener una sola base durante este incremento para validar el modelo y las relaciones. No agregar Supplier salvo que se apruebe el flujo de escalamiento a proveedores.
 
 ### Etapa 05: múltiples fuentes de datos
 

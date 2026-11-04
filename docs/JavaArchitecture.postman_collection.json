@@ -506,7 +506,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8081/api/v1/tickets",
+									"raw": "http://localhost:8081/api/v1/tickets/1/comments",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -515,7 +515,9 @@
 									"path": [
 										"api",
 										"v1",
-										"tickets"
+										"tickets",
+										"1",
+										"comments"
 									]
 								}
 							},
@@ -527,7 +529,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8081/api/v1/tickets",
+									"raw": "http://localhost:8081/api/v1/tickets/888/status-history",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -536,7 +538,9 @@
 									"path": [
 										"api",
 										"v1",
-										"tickets"
+										"tickets",
+										"888",
+										"status-history"
 									]
 								}
 							},
@@ -548,7 +552,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "http://localhost:8081/api/v1/tickets",
+									"raw": "http://localhost:8081/api/v1/tickets/1/status-history",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -557,7 +561,9 @@
 									"path": [
 										"api",
 										"v1",
-										"tickets"
+										"tickets",
+										"1",
+										"status-history"
 									]
 								}
 							},
@@ -903,7 +909,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"priority\": \"MEDIUM\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"raw": "{\n  \"title\": \"El computador se reinicia inesperadamente V2\",\n  \"description\": \"Actualización: el equipo enciende, pero se reinicia después de unos minutos de uso.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"priority\": \"LOW\",\n  \"status\": \"RESOLVED\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -934,7 +940,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"title\": \"No puedo conectarme a la red corporativa\",\n  \"description\": \"El agente está revisando el problema de conexión.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"supportAgentId\": 1,\n  \"priority\": \"HIGH\",\n  \"status\": \"IN_PROGRESS\"\n}",
+									"raw": "{\n  \"title\": \"No puedo conectarme a la red corporativa V2\",\n  \"description\": \"El equipo dejó de conectarse a la red Wi-Fi de la oficina V2.\",\n  \"requesterId\": 1,\n  \"categoryId\": 1,\n  \"supportAgentId\": 1,\n  \"priority\": \"LOW\",\n  \"status\": \"RESOLVED\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
