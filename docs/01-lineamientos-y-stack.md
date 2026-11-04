@@ -10,24 +10,51 @@
 
 - Mantener una aplicación **monolítica modular**. No introducir microservicios como parte de los MVP iniciales.
 - Separar responsabilidades en las capas de **presentación**, **negocio**, **persistencia** y **base de datos**.
-- Conservar la estructura de paquetes actual bajo com.co.support.it.support_ticket_system (controller, entity, repository, service, dto, mapper y exception). Los cambios de arquitectura deben evolucionar esa estructura de forma gradual.
+- Evolucionar gradualmente desde la estructura actual por capa hacia una organización por funcionalidad (`business/ticket`, `business/category`, `business/requester`, `business/supportagent`), manteniendo las capas dentro de cada módulo cuando sea útil. Los contratos y componentes transversales compartidos pueden vivir en `generic` y `business/shared`; no reorganizar todo en una sola modificación.
 - Permitir dependencias hacia adentro: el controlador de presentación delega en un servicio de negocio; el servicio aplica reglas y coordina la persistencia; los repositorios acceden a la base de datos. El controlador no debe ejecutar consultas JPA ni contener reglas de negocio.
-- Tratar Customer y Supplier del ejemplo docente como referencias para aprender conceptos JPA, no como entidades obligatorias. Modelar los conceptos propios del negocio: Requester, SupportAgent, Category y Ticket. Supplier se incorporará solo si se aprueba un caso de escalamiento a proveedores.
+- Modelar los conceptos propios del negocio: Requester, SupportAgent, Category y Ticket. Incorporar proveedores solo si se aprueba un flujo de escalamiento que los requiera.
 
 ### Organización de paquetes
 
-Se conserva la estructura que ya usa la aplicación:
+La aplicación parte de una estructura por capa y puede evolucionar hacia la siguiente organización por funcionalidad:
 
     com.co.support.it.support_ticket_system
-    ├── controller
-    ├── entity
-    ├── repository
-    ├── service
-    ├── dto
-    ├── mapper
-    └── exception
+    ├── business
+    │   ├── ticket
+    │   │   ├── controller
+    │   │   ├── dto
+    │   │   ├── entity
+    │   │   ├── mapper
+    │   │   ├── repository
+    │   │   └── service
+    │   ├── category
+    │   ├── requester
+    │   ├── supportagent
+    │   └── shared
+    ├── integration
+    │   ├── rest
+    │   │   └── <provider>
+    │   └── messaging
+    ├── infrastructure
+    │   └── persistence
+    │       └── <datasource>
+    └── generic
+        ├── controller
+        ├── dto
+        ├── entity
+        ├── exception
+        ├── mapper
+        ├── repository
+        └── service
 
-Las clases transversales, como el manejador global de excepciones, viven en exception. Se podrán agregar paquetes cuando una responsabilidad nueva lo justifique, sin reorganizar todo el código de una sola vez.
+Este esquema es una dirección objetivo, no una instrucción de migración inmediata ni una obligación de crear todos los paquetes. Las excepciones HTTP globales pueden permanecer en un paquete compartido. La etapa de arquitectura por funcionalidad debe trasladar y revisar módulos gradualmente, preservando contratos y comportamiento.
+
+### Interfaces, genéricos y herencia
+
+- Distinguir `business` específico de `generic` reutilizable, contratos de sus implementaciones y herencia de composición.
+- Crear interfaces o clases genéricas cuando haya operaciones equivalentes en más de un módulo y sus variaciones estén identificadas. Mantener servicios, consultas y reglas particulares de Ticket en su módulo; no forzar todo a CRUD genérico.
+- Usar herencia de entidades solo cuando el modelo exprese una relación real. `@MappedSuperclass` puede compartir campos persistentes comunes si existe esa necesidad. Estudiar `SINGLE_TABLE`, `JOINED` y `TABLE_PER_CLASS` como alternativas del curso y documentar sus efectos; no agregar jerarquías artificiales a Requester, SupportAgent, Category o Ticket para demostrar anotaciones.
+- Registrar qué contratos se reutilizan, qué métodos quedan específicos y por qué. Evitar ciclos de dependencia entre `generic` y `business`.
 ### API y contratos
 
 - Exponer recursos REST bajo una ruta versionada, inicialmente `/api/v1`.
@@ -48,7 +75,7 @@ Las clases transversales, como el manejador global de excepciones, viven en exce
 - Plan provisional para el ejercicio de múltiples bases: MySQL para datos operativos de tickets y Oracle para datos maestros de solicitantes y agentes. La asignación queda pendiente de validar con el profesor y de confirmar el origen real de esos datos.
 - Cada base tendrá su configuración, pool de conexiones, entidades y repositorios. No crear relaciones JPA ni claves foráneas entre bases distintas; conservar identificadores externos y consultar cada fuente por separado.
 - Evitar operaciones que requieran una transacción atómica entre MySQL y Oracle. Definir qué respuesta aplica si una fuente no está disponible.
-- Consumir servicios externos mediante una responsabilidad de integración separada y clientes configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. Si se usan tokens, no registrarlos ni exponerlos en respuestas.
+- Consumir servicios externos mediante adaptadores en `integration`, separados del negocio y configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. La interfaz del puerto debe expresar las necesidades del negocio; el adaptador traduce el protocolo y los DTOs externos. Usar el identificador recibido en cada operación, tratar respuestas vacías explícitamente y no registrar credenciales ni tokens.
 
 ### Reutilización
 
@@ -88,9 +115,9 @@ Las versiones concretas de las dependencias se gestionan en `pom.xml`; se deben 
 
 ### Diferencia de versiones que debe confirmarse
 
-El temario PDF menciona **Spring Boot 3.0** y JDK **11, 20 y 26**. Los ejemplos locales v5.a, v5.b y v5.c declaran **Spring Boot 4.1.1**, **Java 25**, **MapStruct 1.6.3**, **Lombok 1.18.42** y `maven-compiler-plugin` 3.13.0. Estos valores reflejan dos fuentes con versiones distintas; no se deben mezclar sin validar compatibilidad.
+El temario y la configuración de los materiales de clase presentan discrepancias de versiones: el temario menciona Spring Boot 3.0 y JDK 11, 20 y 26, mientras que la configuración técnica revisada usa Spring Boot 4.1.1 y Java 25. MapStruct 1.6.3, Lombok 1.18.42 y `maven-compiler-plugin` 3.13.0 también aparecen en esa configuración. No mezclar versiones sin validar compatibilidad con el entorno de evaluación.
 
-**Decisión provisional:** antes de crear el `pom.xml` del sistema, confirmar con el profesor qué JDK y versión de Spring Boot usarán para el desarrollo y evaluación. Si se exige partir de la versión más reciente del repositorio de clase, usar ese `pom.xml` como base, revisando sus dependencias y configuración de compilación.
+**Decisión provisional:** antes de crear el `pom.xml` del sistema, confirmar con el profesor qué JDK y versión de Spring Boot usarán para el desarrollo y evaluación. Alinear las dependencias y la configuración de compilación con el entorno requerido, validando su compatibilidad.
 
 ## 4. Tecnologías del curso para etapas posteriores
 
@@ -109,7 +136,7 @@ No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap ll
 | Decisión | Estado inicial |
 |---|---|
 | Estilo arquitectónico | Monolito modular en capas |
-| Organización de paquetes | Estructura actual plana por responsabilidad bajo el paquete raíz; ampliar solo cuando una necesidad lo justifique |
+| Organización de paquetes | Iniciar por capas y migrar gradualmente a módulos de negocio por funcionalidad; reservar `generic` para contratos y componentes con reutilización comprobada. Mantener integraciones y configuración de infraestructura separadas |
 | Base de datos | MySQL propuesta; Oracle como segunda fuente candidata para datos maestros; distribución pendiente de confirmación |
 | Integración externa | Caso de uso y servicio proveedor pendientes de definir; candidato: consulta de información de activos de TI |
 | Autenticación externa | Aplicar solo si el proveedor elegido la requiere; gestionar credenciales fuera del repositorio y no registrar tokens |

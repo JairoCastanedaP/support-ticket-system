@@ -234,7 +234,7 @@ El primer incremento funcional estará listo cuando:
 - El uso simultáneo de MySQL y Oracle se planifica como etapa del curso; confirmar objetivo y disponibilidad de ambas bases.
 - Propuesta pendiente: MySQL para tickets y datos operativos; Oracle para datos maestros de solicitantes y agentes. Confirmar con el profesor y definir quién administra esos registros.
 - No usar claves foráneas ni relaciones JPA entre las dos bases. Las referencias serán identificadores; definir el comportamiento si alguna fuente no está disponible.
-- Confirmar las versiones de Java y Spring Boot para el entorno de clase y evaluación, por la diferencia entre el temario y los ejemplos locales.
+- Confirmar las versiones de Java y Spring Boot para el entorno de clase y evaluación, por la diferencia entre el temario y la configuración técnica usada en clase.
 - Confirmar si la evaluación exige Docker, despliegue cloud, correo, Quartz o Swagger/OpenAPI.
 - Definir si comentarios del solicitante y notas internas del agente tienen visibilidad distinta.
 - Aprobar las transiciones de estado, condiciones de cierre y reapertura, y si un cambio de estado exige comentario.
