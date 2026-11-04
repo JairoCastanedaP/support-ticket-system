@@ -2,6 +2,9 @@ package com.co.support.it.support_ticket_system.entity;
 
 
 
+import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
+import com.co.support.it.support_ticket_system.business.requester.entity.RequesterEntity;
+import com.co.support.it.support_ticket_system.business.supportagent.entity.SupportAgentEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

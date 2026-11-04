@@ -1,5 +1,8 @@
 package com.co.support.it.support_ticket_system.exception;
 
+import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
+import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
+import com.co.support.it.support_ticket_system.business.supportagent.exception.SupportAgentNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
