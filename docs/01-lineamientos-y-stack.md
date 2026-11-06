@@ -71,10 +71,15 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 - Conservar el historial de cambios de estado cuando sea necesario para auditoría.
 - Eliminar tickets de forma lógica: al retirarlos, marcar `active` como `false` y guardar `deletedAt`; mantener ambos valores consistentes, conservar comentarios e historial y excluir los tickets retirados de las consultas normales.
 - Añadir paginación y ordenamiento a las consultas de listas.
-- Implementar auditoría automática solo después de verificar listeners, habilitación y origen de usuario/fecha.
-- Plan provisional para el ejercicio de múltiples bases: MySQL para datos operativos de tickets y Oracle para datos maestros de solicitantes y agentes. La asignación queda pendiente de validar con el profesor y de confirmar el origen real de esos datos.
-- Cada base tendrá su configuración, pool de conexiones, entidades y repositorios. No crear relaciones JPA ni claves foráneas entre bases distintas; conservar identificadores externos y consultar cada fuente por separado.
-- Evitar operaciones que requieran una transacción atómica entre MySQL y Oracle. Definir qué respuesta aplica si una fuente no está disponible.
+- Diseñar la captura de auditoría con origen de actor/fecha explícito. Para cambios que requieren publicación a Oracle, persistir primero el evento en una bandeja de salida local dentro de la transacción de negocio; no asumir que un listener por sí solo garantiza entrega central.
+- Decisión de trabajo para múltiples bases: MySQL conserva los datos operativos, incluidos solicitantes y agentes; Oracle será el repositorio central de eventos de auditoría, propios y recibidos de otras aplicaciones.
+- La escritura de auditoría originada por una operación de negocio se hará primero en una bandeja de salida local en MySQL dentro de la misma transacción. Un proceso reintentable la publicará en Oracle con identificadores idempotentes. No se dependerá de una transacción atómica distribuida entre las bases.
+- Cada base tendrá configuración, pool, entidades y repositorios separados. No crear relaciones JPA ni claves foráneas entre bases distintas.
+- La tabla central de auditoría será append-only y tendrá campos de origen, evento, entidad/acción, fecha, actor cuando esté disponible, IP confiable cuando corresponda, correlación y resultado. Minimizar los detalles almacenados. El historial de estados del ticket sigue siendo el registro funcional de su ciclo de vida.
+- La importación de otras aplicaciones usará archivos CSV o JSON Lines en una ruta configurable fuera del repositorio. Validar formato, detectar duplicados, guardar procesados/rechazados y proteger la carpeta con permisos adecuados. Considerar Spring Batch cuando se necesiten checkpoints, reanudación o procesamiento voluminoso; para cargas pequeñas se puede evaluar Quartz o `@Scheduled`.
+- Los eventos de auditoría podrán consultarse mediante endpoints de solo lectura, paginados y sujetos a autorización antes de exponer datos de actor, IP o detalles operativos.
+- Las notificaciones de correo se crearán por eventos de negocio, en particular por transición a estado final del ticket, y se enviarán asíncronamente a destinatarios configurables. Guardar estado e intentos para reintentar sin revertir la operación del ticket. Las credenciales SMTP y correos de destinatarios se configuran fuera del repositorio.
+- Los reportes programados podrán generar resúmenes agregados de auditoría y enviarlos por correo; definir frecuencia, formato, destinatarios y retención minimizando datos personales.
 - Consumir servicios externos mediante adaptadores en `integration`, separados del negocio y configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. La interfaz del puerto debe expresar las necesidades del negocio; el adaptador traduce el protocolo y los DTOs externos. Usar el identificador recibido en cada operación, tratar respuestas vacías explícitamente y no registrar credenciales ni tokens.
 
 ### Reutilización
@@ -105,7 +110,7 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 | Mapeo | MapStruct | Conversión entre DTOs y entidades cuando se incorpore esa capa |
 | Productividad | Lombok, de forma moderada | Reducir código repetitivo |
 | Base operativa candidata | MySQL | Tickets, categorías, comentarios e historial |
-| Base de datos de referencia candidata | Oracle | Solicitantes y agentes, sujeto a validar disponibilidad y propiedad de esos datos |
+| Base de auditoría central | Oracle | Eventos de auditoría de esta aplicación y de otros sistemas |
 | Base local de desarrollo | H2, si resulta conveniente | Ejecuciones rápidas; no sustituye la verificación de MySQL y Oracle |
 | Pruebas | Dependencias de prueba administradas por Spring Boot | Pruebas unitarias y de integración cuando se implemente cada etapa |
 | Cliente REST | Postman | Ejercitar endpoints y guardar colecciones de solicitudes |
@@ -124,8 +129,8 @@ El temario y la configuración de los materiales de clase presentan discrepancia
 No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap llegue a ellos:
 
 - **Diseño y SQL:** Oracle SQL Developer Data Modeler; scripts de tablas, claves, índices y datos iniciales; SQL y JPQL.
-- **Persistencia avanzada:** relaciones JPA, herencia, `@MappedSuperclass`, paginación, ordenamiento, procedimientos almacenados, triggers, auditoría y pool de conexiones.
-- **Negocio e integración:** MapStruct/ModelMapper, consumo de servicios web, tokens, Java Mail, Quartz y `@Scheduled`.
+- **Persistencia avanzada:** relaciones JPA, herencia, `@MappedSuperclass`, paginación, ordenamiento, procedimientos almacenados, triggers, auditoría centralizada y pools de conexiones a MySQL y Oracle.
+- **Negocio e integración:** MapStruct/ModelMapper, consumo de servicios web, tokens, Java Mail, importación de auditoría desde archivos, Oracle como repositorio central, Quartz/`@Scheduled` y reportes batch.
 - **REST:** Swagger/OpenAPI, `@ControllerAdvice`, versionamiento de API, respuestas personalizadas y HATEOAS cuando aporte valor.
 - **Empaque y despliegue:** JAR/WAR, Apache Tomcat, JBoss EAP/WildFly, Docker, Docker Compose y AWS Elastic Beanstalk.
 - Motores mencionados: Oracle, MySQL y PostgreSQL. Para el caso de dos bases se propone inicialmente MySQL y Oracle; PostgreSQL queda fuera de este alcance salvo que el profesor indique otra cosa.
@@ -137,7 +142,7 @@ No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap ll
 |---|---|
 | Estilo arquitectónico | Monolito modular en capas |
 | Organización de paquetes | Iniciar por capas y migrar gradualmente a módulos de negocio por funcionalidad; reservar `generic` para contratos y componentes con reutilización comprobada. Mantener integraciones y configuración de infraestructura separadas |
-| Base de datos | MySQL propuesta; Oracle como segunda fuente candidata para datos maestros; distribución pendiente de confirmación |
+| Bases de datos | MySQL para datos operativos; Oracle para auditoría centralizada. La importación de auditoría puede provenir de archivos depositados por otros sistemas |
 | Integración externa | Caso de uso y servicio proveedor pendientes de definir; candidato: consulta de información de activos de TI |
 | Autenticación externa | Aplicar solo si el proveedor elegido la requiere; gestionar credenciales fuera del repositorio y no registrar tokens |
 | Relaciones entre bases | Sin claves foráneas ni relaciones JPA cruzadas; usar identificadores y consultar la fuente propietaria |

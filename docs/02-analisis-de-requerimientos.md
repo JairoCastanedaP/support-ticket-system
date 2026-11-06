@@ -34,7 +34,8 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 - Adjuntos e imágenes.
 - Chat en vivo.
 - Integración con un servicio externo útil para el soporte, pendiente de definir y planificada para una etapa posterior. Si requiere credenciales o tokens, se manejarán de forma segura; esto no habilita por sí mismo login para la API propia.
-- Notificaciones por correo y recordatorios automáticos.
+- Notificaciones y reportes por correo (planificados para etapas posteriores; se incluye el aviso al administrador cuando un ticket alcance su estado final).
+- Importación de auditoría desde archivos depositados por otras aplicaciones y consolidación central en Oracle (etapa posterior).
 - SLA configurable por cliente o múltiples organizaciones.
 - Microservicios y despliegue en AWS.
 
@@ -60,6 +61,8 @@ En el primer corte estos roles describen responsabilidades del sistema, pero no 
 6. Al completar la atención, marca el ticket `RESOLVED` y registra una nota de resolución.
 7. El ticket puede pasar a `CLOSED`; los datos e historial quedan consultables.
 8. El sistema permite consultar los tickets y obtener indicadores básicos.
+9. Cuando el ticket transiciona al estado final acordado, el sistema crea un aviso pendiente y lo envía de forma asíncrona al administrador. Un fallo del correo no revierte el cambio del ticket.
+10. Los eventos de auditoría se consolidan en Oracle; el sistema puede importar archivos que otras aplicaciones depositen en una ruta configurada y producir reportes periódicos por correo.
 
 ## 6. Requerimientos funcionales
 
@@ -76,8 +79,12 @@ En el primer corte estos roles describen responsabilidades del sistema, pero no 
 | RF-09 | Mantener categorías de soporte activas/inactivas | Should |
 | RF-10 | Consultar cantidades por estado/categoría y tiempos promedio de resolución | Should |
 | RF-11 | Registrar automáticamente fechas de creación y actualización | Should |
-| RF-12 | Notificar por correo o tarea programada sobre asignaciones y tickets pendientes | Could; etapa posterior |
+| RF-12 | Notificar por correo al administrador cuando un ticket transicione a su estado final; configurar el destinatario fuera del código | Should; etapa de integraciones |
 | RF-13 | Eliminar lógicamente un ticket, excluirlo de consultas normales y conservar su registro e historial | Must |
+| RF-14 | Registrar eventos de auditoría en un almacén central separado del historial funcional del ticket | Should; etapa de múltiples bases |
+| RF-15 | Importar eventos de auditoría de otras aplicaciones desde archivos CSV o JSON Lines en una ruta configurada | Could; etapa batch |
+| RF-16 | Consultar la auditoría central con filtros y paginación, con acceso restringido | Could; tras definir autenticación/autorización |
+| RF-17 | Generar reportes periódicos agregados y enviarlos por correo a destinatarios configurados | Could; etapa batch |
 
 ### Transiciones iniciales propuestas
 
@@ -95,6 +102,9 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 - **Integridad:** claves foráneas y reglas que eviten comentarios o eventos huérfanos.
 - **Consistencia:** cambios relacionados dentro de una transacción.
 - **Trazabilidad:** conservar quién/cuándo creó o actualizó un ticket y su historial de estados cuando los datos de identidad estén disponibles.
+- **Auditoría central:** distinguir el historial funcional del ticket del registro transversal de acciones; conservar eventos en Oracle como registros append-only e importar con identificadores idempotentes.
+- **Procesamiento batch:** validar formato y filas, evitar importaciones duplicadas, separar archivos recibidos, procesados y rechazados, y registrar errores recuperables.
+- **Correo:** mantener destinatarios y credenciales SMTP en configuración externa; registrar estado e intentos de envío y limitar el mensaje a los datos necesarios.
 - **Usabilidad para desarrollo:** endpoints documentados y ejemplos reproducibles en Postman.
 - **Portabilidad:** configuración externa a los fuentes; JDK, Spring Boot y base de datos fijados en el proyecto.
 - **Privacidad y seguridad:** usar datos ficticios durante desarrollo, no registrar secretos o datos personales innecesarios y mantener credenciales/tokens de integraciones fuera del repositorio y de los logs. La autenticación/autorización de usuarios en la API propia queda fuera del primer MVP.
@@ -103,7 +113,7 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 
 ## 8. Modelo relacional inicial
 
-El siguiente es el modelo lógico objetivo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. Los campos de resolución, autoría y visibilidad indicados como pendientes se completarán en la etapa 06, junto con las reglas del flujo. La distribución entre MySQL y Oracle se tratará en una etapa posterior.
+El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. Los campos de resolución, autoría y visibilidad se completarán al validar el flujo de negocio. MySQL conservará este modelo; Oracle tendrá un modelo separado de eventos de auditoría central, definido en la etapa 06.
 
 ~~~mermaid
 erDiagram
@@ -193,14 +203,11 @@ erDiagram
 - TicketStatusHistory ya conserva ticket, estado anterior/nuevo y fecha. `reason`, `actor_type` y `actor_id` se incorporarán en la etapa 06, cuando se definan las reglas de transición y la identidad de quien ejecuta cada cambio.
 - Los identificadores de autor y actor serán referencias polimórficas; su validación corresponderá al servicio mientras no exista una entidad común de identidad.
 
-### Persistencia y posible distribución entre bases
+### Persistencia y distribución entre bases
 
-Para la etapa de modelo y relaciones se usará inicialmente una sola base, con claves foráneas reales entre las tablas. Para practicar dos fuentes de datos, la propuesta pendiente de validar es:
+Durante la etapa 04 se usa una sola base para mantener claves foráneas e integridad referencial dentro del dominio. En la arquitectura objetivo, MySQL conserva las entidades operativas completas: Requester, SupportAgent, Category, Ticket, TicketComment y TicketStatusHistory. Oracle recibe eventos de auditoría de este sistema y de otras aplicaciones. La auditoría originada localmente se escribe primero en una bandeja de salida de MySQL y se consolida en Oracle mediante un proceso reintentable e idempotente; los archivos externos se procesan desde una ruta configurada. No habrá relaciones JPA ni claves foráneas entre MySQL y Oracle.
 
-- MySQL: Category, Ticket, TicketComment y TicketStatusHistory.
-- Oracle: Requester y SupportAgent, si esas personas realmente se administran allí.
-
-Al separar las fuentes, requester_id y assigned_agent_id en Ticket serán identificadores externos. No habrá claves foráneas ni relaciones JPA entre MySQL y Oracle; las consultas a cada fuente se realizarán por separado. La aplicación debe definir cómo responde si Oracle no está disponible.
+El evento central puede identificar el sistema origen, entidad/registro, acción, fecha UTC, actor si se conoce, IP confiable cuando esté disponible, correlación y resultado. No almacenar secretos ni detalles personales innecesarios. Los archivos importados deberán tener contrato/versionado, codificación acordada, identificador único por evento y política de archivado y rechazo.
 
 Supplier no forma parte del modelo inicial. Se reconsiderará si se aprueba un caso de escalamiento de tickets a proveedores externos. El TicketEntity actual guarda nombre y correo del solicitante directamente; al implementar Requester se deberá decidir cómo migrar esos campos y ajustar TicketRequestDto y sus mappers.
 
@@ -231,9 +238,11 @@ El primer incremento funcional estará listo cuando:
 ## 11. Supuestos y preguntas abiertas
 
 - La primera versión es backend REST, sin frontend.
-- El uso simultáneo de MySQL y Oracle se planifica como etapa del curso; confirmar objetivo y disponibilidad de ambas bases.
-- Propuesta pendiente: MySQL para tickets y datos operativos; Oracle para datos maestros de solicitantes y agentes. Confirmar con el profesor y definir quién administra esos registros.
-- No usar claves foráneas ni relaciones JPA entre las dos bases. Las referencias serán identificadores; definir el comportamiento si alguna fuente no está disponible.
+- El uso simultáneo de MySQL y Oracle se planifica como etapa del curso; confirmar disponibilidad de ambas bases. La distribución objetivo es MySQL para el dominio operativo y Oracle para auditoría centralizada.
+- Acordar el formato de intercambio de archivos, productores externos, estructura y permisos de la carpeta, frecuencia de carga y retención de archivos procesados/rechazados.
+- Definir la identidad del actor y el tratamiento de IP. Mientras no exista autenticación, no atribuir acciones a requesterId o supportAgentId por inferencia; usar actor de sistema o desconocido.
+- Definir cuál estado dispara el correo (`RESOLVED`, `CLOSED` o ambos), la dirección del administrador y el entorno SMTP.
+- Los reportes batch serán agregados por defecto; definir periodicidad, destinatarios, formato y retención antes de implementarlos.
 - Confirmar las versiones de Java y Spring Boot para el entorno de clase y evaluación, por la diferencia entre el temario y la configuración técnica usada en clase.
 - Confirmar si la evaluación exige Docker, despliegue cloud, correo, Quartz o Swagger/OpenAPI.
 - Definir si comentarios del solicitante y notas internas del agente tienen visibilidad distinta.
