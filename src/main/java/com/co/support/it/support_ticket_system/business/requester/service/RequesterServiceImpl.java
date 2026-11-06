@@ -1,3 +1,37 @@
+
+package com.co.support.it.support_ticket_system.business.requester.service;
+
+import com.co.support.it.support_ticket_system.business.requester.dto.RequesterRequestDto;
+import com.co.support.it.support_ticket_system.business.requester.dto.RequesterResponseDto;
+import com.co.support.it.support_ticket_system.business.requester.entity.RequesterEntity;
+import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
+import com.co.support.it.support_ticket_system.business.requester.mapper.RequesterMapper;
+import com.co.support.it.support_ticket_system.business.requester.repository.RequesterRepository;
+import com.co.support.it.support_ticket_system.generic.service.GenericServiceImpl;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RequesterServiceImpl
+        extends GenericServiceImpl<RequesterEntity, RequesterRequestDto, RequesterResponseDto, Long>
+        implements RequesterService {
+
+    public RequesterServiceImpl(
+            RequesterRepository requesterRepository,
+            RequesterMapper requesterMapper
+    ) {
+        super(
+                requesterRepository,
+                requesterMapper::toEntity,
+                requesterMapper::toResponseDto
+        );
+    }
+
+    @Override
+    protected RuntimeException createNotFoundException(Long id) {
+        return new RequesterNotFoundException(id);
+    }
+}
+/*
 package com.co.support.it.support_ticket_system.business.requester.service;
 
 
@@ -62,4 +96,4 @@ public class RequesterServiceImpl implements RequesterService {
 
         return requesterMapper.toResponseDto(savedRequester);
     }
-}
+}*/

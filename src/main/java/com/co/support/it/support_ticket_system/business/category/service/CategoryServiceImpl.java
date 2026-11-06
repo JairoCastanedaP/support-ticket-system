@@ -6,6 +6,39 @@ import com.co.support.it.support_ticket_system.business.category.entity.Category
 import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
 import com.co.support.it.support_ticket_system.business.category.mapper.CategoryMapper;
 import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
+import com.co.support.it.support_ticket_system.generic.service.GenericServiceImpl;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CategoryServiceImpl
+        extends GenericServiceImpl<CategoryEntity, CategoryRequestDto, CategoryResponseDto, Long>
+        implements CategoryService {
+
+    public CategoryServiceImpl(
+            CategoryRepository categoryRepository,
+            CategoryMapper categoryMapper
+    ) {
+        super(
+                categoryRepository,
+                categoryMapper::toEntity,
+                categoryMapper::toResponseDto
+        );
+    }
+
+    @Override
+    protected RuntimeException createNotFoundException(Long id) {
+        return new CategoryNotFoundException(id);
+    }
+}
+/*
+package com.co.support.it.support_ticket_system.business.category.service;
+
+import com.co.support.it.support_ticket_system.business.category.dto.CategoryRequestDto;
+import com.co.support.it.support_ticket_system.business.category.dto.CategoryResponseDto;
+import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
+import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
+import com.co.support.it.support_ticket_system.business.category.mapper.CategoryMapper;
+import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -59,4 +92,4 @@ public class CategoryServiceImpl implements CategoryService {
 
         return categoryMapper.toResponseDto(savedCategory);
     }
-}
+}*/

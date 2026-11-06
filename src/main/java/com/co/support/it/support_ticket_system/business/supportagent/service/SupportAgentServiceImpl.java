@@ -6,6 +6,40 @@ import com.co.support.it.support_ticket_system.business.supportagent.entity.Supp
 import com.co.support.it.support_ticket_system.business.supportagent.exception.SupportAgentNotFoundException;
 import com.co.support.it.support_ticket_system.business.supportagent.mapper.SupportAgentMapper;
 import com.co.support.it.support_ticket_system.business.supportagent.repository.SupportAgentRepository;
+import com.co.support.it.support_ticket_system.generic.service.GenericServiceImpl;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SupportAgentServiceImpl
+        extends GenericServiceImpl<SupportAgentEntity, SupportAgentRequestDto, SupportAgentResponseDto, Long>
+        implements SupportAgentService {
+
+    public SupportAgentServiceImpl(
+            SupportAgentRepository supportAgentRepository,
+            SupportAgentMapper supportAgentMapper
+    ) {
+        super(
+                supportAgentRepository,
+                supportAgentMapper::toEntity,
+                supportAgentMapper::toResponseDto
+        );
+    }
+
+    @Override
+    protected RuntimeException createNotFoundException(Long id) {
+        return new SupportAgentNotFoundException(id);
+    }
+}
+
+/*
+package com.co.support.it.support_ticket_system.business.supportagent.service;
+
+import com.co.support.it.support_ticket_system.business.supportagent.dto.SupportAgentRequestDto;
+import com.co.support.it.support_ticket_system.business.supportagent.dto.SupportAgentResponseDto;
+import com.co.support.it.support_ticket_system.business.supportagent.entity.SupportAgentEntity;
+import com.co.support.it.support_ticket_system.business.supportagent.exception.SupportAgentNotFoundException;
+import com.co.support.it.support_ticket_system.business.supportagent.mapper.SupportAgentMapper;
+import com.co.support.it.support_ticket_system.business.supportagent.repository.SupportAgentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,4 +83,4 @@ public class SupportAgentServiceImpl implements SupportAgentService {
 
         return supportAgentMapper.toResponseDto(savedSupportAgent);
     }
-}
+}*/
