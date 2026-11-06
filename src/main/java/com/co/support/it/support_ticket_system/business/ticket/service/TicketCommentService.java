@@ -1,0 +1,16 @@
+package com.co.support.it.support_ticket_system.business.ticket.service;
+
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketCommentResponseDto;
+
+import java.util.List;
+
+public interface TicketCommentService {
+
+    List<TicketCommentResponseDto> findByTicketId(Long ticketId);
+
+    TicketCommentResponseDto save(
+            Long ticketId,
+            TicketCommentRequestDto requestDto
+    );
+}
