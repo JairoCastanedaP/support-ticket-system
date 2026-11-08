@@ -13,3 +13,13 @@ spring:
   h2:
     console:
       enabled: false
+app:
+  datasource:
+    oracle:
+      url: ${ORACLE_AUDIT_URL:jdbc:oracle:thin:@//oracle:1521/FREEPDB1}
+      username: ${ORACLE_AUDIT_USERNAME}
+      password: ${ORACLE_AUDIT_PASSWORD}
+      driver-class-name: oracle.jdbc.OracleDriver
+      configuration:
+        maximum-pool-size: 5
+        minimum-idle: 1
