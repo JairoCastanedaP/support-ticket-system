@@ -28,6 +28,12 @@ import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusH
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.entity.AuditOutboxEntity;
+import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.repository.AuditOutboxRepository;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.time.Instant;
+
 @Service
 @Transactional(readOnly = true)
 public class TicketServiceImpl implements TicketService {
@@ -40,6 +46,9 @@ public class TicketServiceImpl implements TicketService {
     private final TicketStatusHistoryMapper ticketStatusHistoryMapper;
     private final TicketMapper ticketMapper;
 
+    private final AuditOutboxRepository auditOutboxRepository;
+    private final JsonMapper jsonMapper;
+
 
     public TicketServiceImpl(
             TicketRepository ticketRepository,
@@ -48,7 +57,9 @@ public class TicketServiceImpl implements TicketService {
             SupportAgentRepository supportAgentRepository,
             TicketStatusHistoryRepository ticketStatusHistoryRepository,
             TicketMapper ticketMapper,
-            TicketStatusHistoryMapper ticketStatusHistoryMapper
+            TicketStatusHistoryMapper ticketStatusHistoryMapper,
+            AuditOutboxRepository auditOutboxRepository,
+            JsonMapper jsonMapper
     ) {
         this.ticketRepository = ticketRepository;
         this.requesterRepository = requesterRepository;
@@ -57,6 +68,8 @@ public class TicketServiceImpl implements TicketService {
         this.ticketStatusHistoryRepository = ticketStatusHistoryRepository;
         this.ticketMapper = ticketMapper;
         this.ticketStatusHistoryMapper = ticketStatusHistoryMapper;
+        this.auditOutboxRepository = auditOutboxRepository;
+        this.jsonMapper = jsonMapper;
     }
 
     @Override
@@ -134,6 +147,9 @@ public class TicketServiceImpl implements TicketService {
         }
 
         TicketEntity savedTicket = ticketRepository.save(ticket);
+
+        registerTicketCreatedEvent(savedTicket);
+
         return ticketMapper.toResponseDto(savedTicket);
     }
 
@@ -186,5 +202,41 @@ public class TicketServiceImpl implements TicketService {
     private SupportAgentEntity findSupportAgent(Long id) {
         return supportAgentRepository.findById(id)
                 .orElseThrow(() -> new SupportAgentNotFoundException(id));
+    }
+    private void registerTicketCreatedEvent(TicketEntity ticket) {
+        TicketCreatedPayload payload = new TicketCreatedPayload(
+                ticket.getId(),
+                ticket.getTicketNumber(),
+                ticket.getTitle(),
+                ticket.getPriority(),
+                ticket.getStatus(),
+                ticket.getRequester().getId(),
+                ticket.getCategory().getId(),
+                ticket.getAssignedAgent() == null
+                        ? null
+                        : ticket.getAssignedAgent().getId()
+        );
+
+        AuditOutboxEntity event = new AuditOutboxEntity();
+        event.setSourceSystem("support-ticket-system");
+        event.setEventType("TICKET_CREATED");
+        event.setEntityType("TICKET");
+        event.setEntityId(ticket.getId().toString());
+        event.setOccurredAtUtc(Instant.now());
+        event.setPayload(jsonMapper.writeValueAsString(payload));
+
+        auditOutboxRepository.save(event);
+    }
+
+    private record TicketCreatedPayload(
+            Long ticketId,
+            String ticketNumber,
+            String title,
+            String priority,
+            String status,
+            Long requesterId,
+            Long categoryId,
+            Long supportAgentId
+    ) {
     }
 }

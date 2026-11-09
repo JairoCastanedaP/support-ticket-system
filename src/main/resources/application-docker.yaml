@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:support_ticket_system}
+    username: ${MYSQL_USER:support_app}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  h2:
+    console:
+      enabled: false
+app:
+  datasource:
+    oracle:
+      url: ${ORACLE_AUDIT_URL:jdbc:oracle:thin:@//oracle:1521/FREEPDB1}
+      username: ${ORACLE_AUDIT_USERNAME}
+      password: ${ORACLE_AUDIT_PASSWORD}
+      driver-class-name: oracle.jdbc.OracleDriver
+      configuration:
+        maximum-pool-size: 5
+        minimum-idle: 1
