@@ -57,7 +57,7 @@ public class TicketController {
 
     @PostMapping
     public ResponseEntity<TicketResponseDto> save(@Valid @RequestBody TicketRequestDto ticket){
-        log.info("Saving Ticket: {}",ticket);
+        //log.info("Saving Ticket: {}",ticket);
         TicketResponseDto savedTicket= ticketService.save(ticket);
         URI location = URI.create("/api/v1/tickets/" + savedTicket.id());
         return ResponseEntity.created(location).body(savedTicket);
