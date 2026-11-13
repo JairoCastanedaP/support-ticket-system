@@ -17,3 +17,13 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+# Perfil local: la auditoría central usa una segunda base H2 en memoria.
+# En el perfil docker esta configuración se reemplaza por Oracle.
+app:
+  datasource:
+    oracle:
+      url: jdbc:h2:mem:auditlocal
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver

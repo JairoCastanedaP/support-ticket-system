@@ -4,8 +4,8 @@
 
 **Nombre:** Support Ticket System  
 **Tipo:** Mesa de ayuda interna de TI  
-**Versión de alcance:** Borrador inicial  
-**Estado:** Requerimientos por validar con el profesor y ajustar durante el curso
+**Versión de alcance:** Entrega final  
+**Estado:** Alcance aprobado. Las decisiones de diseño están en la sección 12.
 
 ## 2. Problema y objetivo
 
@@ -27,19 +27,18 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 - Consultar indicadores básicos por estado y categoría.
 - Probar todas las operaciones mediante API REST y Postman.
 
-### Fuera del primer MVP
+### Incluido en la entrega final
 
-- Interfaz web o aplicación móvil.
-- Inicio de sesión, SSO y gestión avanzada de permisos.
-- Adjuntos e imágenes.
-- Chat en vivo.
-- Integración con un servicio externo útil para el soporte, pendiente de definir y planificada para una etapa posterior. Si requiere credenciales o tokens, se manejarán de forma segura; esto no habilita por sí mismo login para la API propia.
-- Notificaciones y reportes por correo (planificados para etapas posteriores; se incluye el aviso al administrador cuando un ticket alcance su estado final).
-- Importación de auditoría desde archivos depositados por otras aplicaciones y consolidación central en Oracle (etapa posterior).
-- SLA configurable por cliente o múltiples organizaciones.
-- Microservicios y despliegue en AWS.
-
-Se podrán agregar después si los temas del curso y el tiempo disponible lo permiten.
+- Cambio de estado mediante transiciones controladas, con nota de resolución o motivo cuando se requiera.
+- Número de ticket legible (`TCK-2026-000123`) y fecha límite de atención (SLA) calculada según la prioridad.
+- Indicadores mediante procedimiento almacenado y listado resumido mediante vista de base de datos.
+- Consulta de activos de TI en un servicio externo protegido con token (login + Bearer).
+- Consulta de datos del solicitante en un directorio de empleados interno (sin seguridad).
+- Portal para clientes externos: consulta de un ticket por su número, protegida con el header `X-API-Key`.
+- Notificación por correo al administrador cuando un ticket pasa a `RESOLVED`, enviada por un job de Quartz.
+- Volcado masivo de tickets a demanda (Spring Batch) hacia una base histórica en PostgreSQL.
+- Auditoría central en Oracle mediante bandeja de salida en MySQL (implementada en la etapa 06).
+- Documentación con Swagger, REST Docs (endpoints de Ticket) y colección de Postman por fase.
 
 ## 4. Actores
 
@@ -47,9 +46,10 @@ Se podrán agregar después si los temas del curso y el tiempo disponible lo per
 |---|---|
 | Solicitante | Registra un incidente, consulta su evolución y aporta información solicitada |
 | Agente de soporte | Clasifica, prioriza, asigna, comenta y resuelve tickets |
-| Administrador | Mantiene categorías y datos de referencia del área de soporte |
+| Administrador | Mantiene categorías y datos de referencia del área de soporte; recibe el correo de tickets resueltos y lanza el volcado histórico |
+| Cliente externo | Sistema o persona ajena a la organización que consulta el estado de un ticket mediante el portal con API key |
 
-En el primer corte estos roles describen responsabilidades del sistema, pero no implican que ya exista autenticación. La forma de identificar a la persona que ejecuta cada operación es una decisión pendiente. La autenticación de la aplicación ante un servicio externo es un asunto distinto y se definirá al seleccionar la integración.
+Estos roles describen responsabilidades del sistema, pero no implican que exista autenticación de usuarios. El actor de cada operación se toma del header opcional `X-User-Id`; si no se envía, se registra `SYSTEM`. La autenticación de la aplicación ante el servicio externo de activos (token Bearer) y la API key del portal son mecanismos distintos de un login de usuarios.
 
 ## 5. Flujo principal
 
@@ -61,8 +61,10 @@ En el primer corte estos roles describen responsabilidades del sistema, pero no 
 6. Al completar la atención, marca el ticket `RESOLVED` y registra una nota de resolución.
 7. El ticket puede pasar a `CLOSED`; los datos e historial quedan consultables.
 8. El sistema permite consultar los tickets y obtener indicadores básicos.
-9. Cuando el ticket transiciona al estado final acordado, el sistema crea un aviso pendiente y lo envía de forma asíncrona al administrador. Un fallo del correo no revierte el cambio del ticket.
-10. Los eventos de auditoría se consolidan en Oracle; el sistema puede importar archivos que otras aplicaciones depositen en una ruta configurada y producir reportes periódicos por correo.
+9. Cuando el ticket pasa a `RESOLVED`, el sistema crea una notificación pendiente y un job de Quartz la envía por correo al administrador. Un fallo del correo no revierte el cambio del ticket.
+10. Los eventos de auditoría se consolidan en Oracle mediante la bandeja de salida de MySQL.
+11. Un cliente externo consulta el estado de su ticket por número en el portal, enviando su API key.
+12. El administrador lanza a demanda el volcado de tickets hacia la base histórica en PostgreSQL y consulta el resultado de la ejecución.
 
 ## 6. Requerimientos funcionales
 
@@ -79,22 +81,34 @@ En el primer corte estos roles describen responsabilidades del sistema, pero no 
 | RF-09 | Mantener categorías de soporte activas/inactivas | Should |
 | RF-10 | Consultar cantidades por estado/categoría y tiempos promedio de resolución | Should |
 | RF-11 | Registrar automáticamente fechas de creación y actualización | Should |
-| RF-12 | Notificar por correo al administrador cuando un ticket transicione a su estado final; configurar el destinatario fuera del código | Should; etapa de integraciones |
+| RF-12 | Notificar por correo al administrador cuando un ticket pase a `RESOLVED`; configurar el destinatario fuera del código | Must; etapa 10 |
 | RF-13 | Eliminar lógicamente un ticket, excluirlo de consultas normales y conservar su registro e historial | Must |
-| RF-14 | Registrar eventos de auditoría en un almacén central separado del historial funcional del ticket | Should; etapa de múltiples bases |
-| RF-15 | Importar eventos de auditoría de otras aplicaciones desde archivos CSV o JSON Lines en una ruta configurada | Could; etapa batch |
-| RF-16 | Consultar la auditoría central con filtros y paginación, con acceso restringido | Could; tras definir autenticación/autorización |
-| RF-17 | Generar reportes periódicos agregados y enviarlos por correo a destinatarios configurados | Could; etapa batch |
+| RF-14 | Registrar eventos de auditoría en un almacén central separado del historial funcional del ticket | Must; etapa 06 |
+| RF-15 | Calcular la fecha límite de atención (SLA) según la prioridad del ticket | Must; etapa 08 |
+| RF-16 | Asociar opcionalmente un activo de TI al ticket y consultar su detalle en el servicio externo protegido con token | Must; etapa 10 |
+| RF-17 | Completar los datos del solicitante con el directorio de empleados interno | Should; etapa 10 |
+| RF-18 | Permitir que un cliente externo consulte un ticket por su número con una API key, recibiendo solo datos no internos | Must; etapa 10 |
+| RF-19 | Ejecutar a demanda el volcado masivo de tickets hacia la base histórica (PostgreSQL) y consultar el estado de la ejecución | Must; etapa 11 |
 
-### Transiciones iniciales propuestas
+### Transiciones de estado aprobadas
 
-- `OPEN` → `IN_PROGRESS` o `CLOSED` si se descarta por duplicado/no aplicable.
-- `IN_PROGRESS` → `WAITING_FOR_REQUESTER`, `RESOLVED` o `OPEN` por reasignación/revisión.
-- `WAITING_FOR_REQUESTER` → `IN_PROGRESS` o `CLOSED` según la respuesta y la política acordada.
-- `RESOLVED` → `CLOSED` o `IN_PROGRESS` si se reabre.
-- `CLOSED` es terminal para el primer MVP; la reapertura puede definirse como nueva versión del alcance.
+| Desde | Hacia | Condición |
+|---|---|---|
+| `OPEN` | `IN_PROGRESS` | Un agente toma el ticket |
+| `OPEN` | `CLOSED` | Duplicado o no aplica; motivo obligatorio |
+| `IN_PROGRESS` | `WAITING_FOR_REQUESTER` | El agente necesita información del solicitante |
+| `IN_PROGRESS` | `RESOLVED` | Solucionado; nota de resolución obligatoria |
+| `WAITING_FOR_REQUESTER` | `IN_PROGRESS` | El solicitante respondió |
+| `WAITING_FOR_REQUESTER` | `CLOSED` | El solicitante no respondió; motivo obligatorio |
+| `RESOLVED` | `CLOSED` | El solicitante confirma la solución |
+| `RESOLVED` | `IN_PROGRESS` | La solución no funcionó; se reabre |
+| `CLOSED` | — | Estado terminal; si el problema reaparece se crea un ticket nuevo |
 
-Estas transiciones son una propuesta de negocio que deberá confirmarse antes de implementar el servicio de estados.
+- El ticket se crea siempre en `OPEN`; el cliente no envía el estado.
+- El estado se cambia solo con `PATCH /api/v1/tickets/{id}/status`, indicando el estado destino y el motivo o nota. `PUT` no modifica el estado.
+- Una transición no listada responde `409 Conflict` y no guarda cambios.
+- Toda transición válida queda registrada en `ticket_status_history`.
+- La reasignación de agente no cambia el estado: se hace sin pasar por `OPEN`.
 
 ## 7. Requerimientos no funcionales
 
@@ -107,13 +121,13 @@ Estas transiciones son una propuesta de negocio que deberá confirmarse antes de
 - **Correo:** mantener destinatarios y credenciales SMTP en configuración externa; registrar estado e intentos de envío y limitar el mensaje a los datos necesarios.
 - **Usabilidad para desarrollo:** endpoints documentados y ejemplos reproducibles en Postman.
 - **Portabilidad:** configuración externa a los fuentes; JDK, Spring Boot y base de datos fijados en el proyecto.
-- **Privacidad y seguridad:** usar datos ficticios durante desarrollo, no registrar secretos o datos personales innecesarios y mantener credenciales/tokens de integraciones fuera del repositorio y de los logs. La autenticación/autorización de usuarios en la API propia queda fuera del primer MVP.
+- **Privacidad y seguridad:** usar datos ficticios durante desarrollo, no registrar secretos o datos personales innecesarios y mantener credenciales/tokens de integraciones fuera del repositorio y de los logs. La API no implementa login de usuarios; el portal externo usa API key.
 - **Rendimiento básico:** listados paginados; consultas de indicadores agregadas en persistencia si el volumen lo requiere.
 - **Despliegue:** el sistema deberá poder empaquetarse y arrancarse de forma reproducible al llegar a la etapa de despliegue.
 
 ## 8. Modelo relacional inicial
 
-El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. Los campos de resolución, autoría y visibilidad se completarán al validar el flujo de negocio. MySQL conservará este modelo; Oracle tendrá un modelo separado de eventos de auditoría central, definido en la etapa 06.
+El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. La etapa 08 completa los campos de resolución, motivo y fecha límite. MySQL conserva este modelo; Oracle tiene un modelo separado de eventos de auditoría (etapa 06) y PostgreSQL el histórico de tickets (etapa 11).
 
 ~~~mermaid
 erDiagram
@@ -197,26 +211,27 @@ erDiagram
 
 - Category: nombre obligatorio y único, descripción opcional y estado activo/inactivo.
 - Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización. `is_active` y `deleted_at` registran la eliminación lógica: activo implica `is_active = true` y `deleted_at = null`; eliminado implica `is_active = false` y una fecha en `deleted_at`.
-- Priority y status se restringen a valores acordados por el negocio; el catálogo exacto se definirá antes de implementar sus reglas.
-- `resolution_note` se incorporará en la etapa 06 y se exigirá al resolver o cerrar el ticket según la política que se confirme.
-- TicketComment ya almacena ticket, contenido y fecha. `author_type`, `author_id` y `visibility` se incorporarán en la etapa 06, cuando se defina la identidad y visibilidad de comentarios.
-- TicketStatusHistory ya conserva ticket, estado anterior/nuevo y fecha. `reason`, `actor_type` y `actor_id` se incorporarán en la etapa 06, cuando se definan las reglas de transición y la identidad de quien ejecuta cada cambio.
-- Los identificadores de autor y actor serán referencias polimórficas; su validación corresponderá al servicio mientras no exista una entidad común de identidad.
+- Priority y status se restringen a los enums `TicketPriority` y `TicketStatus` (etapa 06).
+- `resolution_note` se incorpora en la etapa 08 y es obligatoria al pasar a `RESOLVED`.
+- TicketComment almacena ticket, contenido y fecha.
+- TicketStatusHistory conserva ticket, estado anterior/nuevo y fecha; en la etapa 08 incorpora `reason` y el actor que ejecuta el cambio.
+- El actor se registra como texto (`X-User-Id` o `SYSTEM`), sin relación con una entidad de identidad.
 
 ### Persistencia y distribución entre bases
 
-Durante la etapa 04 se usa una sola base para mantener claves foráneas e integridad referencial dentro del dominio. En la arquitectura objetivo, MySQL conserva las entidades operativas completas: Requester, SupportAgent, Category, Ticket, TicketComment y TicketStatusHistory. Oracle recibe eventos de auditoría de este sistema y de otras aplicaciones. La auditoría originada localmente se escribe primero en una bandeja de salida de MySQL y se consolida en Oracle mediante un proceso reintentable e idempotente; los archivos externos se procesan desde una ruta configurada. No habrá relaciones JPA ni claves foráneas entre MySQL y Oracle.
+MySQL conserva las entidades operativas completas: Requester, SupportAgent, Category, Ticket, TicketComment y TicketStatusHistory. Oracle recibe eventos de auditoría de este sistema y de otras aplicaciones: la auditoría originada localmente se escribe primero en una bandeja de salida de MySQL y se consolida en Oracle mediante un proceso reintentable e idempotente. PostgreSQL recibe el volcado histórico de tickets mediante Spring Batch. No hay relaciones JPA ni claves foráneas entre bases.
 
-El evento central puede identificar el sistema origen, entidad/registro, acción, fecha UTC, actor si se conoce, IP confiable cuando esté disponible, correlación y resultado. No almacenar secretos ni detalles personales innecesarios. Los archivos importados deberán tener contrato/versionado, codificación acordada, identificador único por evento y política de archivado y rechazo.
+El evento central puede identificar el sistema origen, entidad/registro, acción, fecha UTC, actor si se conoce, IP confiable cuando esté disponible, correlación y resultado. No almacenar secretos ni detalles personales innecesarios.
 
-Supplier no forma parte del modelo inicial. Se reconsiderará si se aprueba un caso de escalamiento de tickets a proveedores externos. El TicketEntity actual guarda nombre y correo del solicitante directamente; al implementar Requester se deberá decidir cómo migrar esos campos y ajustar TicketRequestDto y sus mappers.
 
 ## 9. Reglas de negocio iniciales
 
 - El título, la descripción, la categoría y un contacto válido son obligatorios para crear el ticket.
-- Regla objetivo para la etapa 06: el sistema asignará el estado inicial `OPEN` y el cliente no podrá elegirlo libremente. Actualmente, el contrato de creación aún recibe `status` en la solicitud; se alineará al implementar las reglas del flujo.
+- El sistema asigna el estado inicial `OPEN`; el contrato de creación deja de recibir `status` (etapa 08).
+- Estado y prioridad se restringen a los enums `TicketStatus` (`OPEN`, `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `RESOLVED`, `CLOSED`) y `TicketPriority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`); un valor distinto responde `400 Bad Request`.
 - Un ticket asignado debe tener un agente activo.
-- No se puede cerrar un ticket sin registrar motivo o nota de resolución, según la transición aprobada.
+- Pasar a `RESOLVED` exige nota de resolución; cerrar desde `OPEN` o `WAITING_FOR_REQUESTER` exige motivo.
+- La fecha límite (SLA) se calcula al crear el ticket según la prioridad y se recalcula si la prioridad cambia.
 - Todo cambio de estado debe generar un registro de historial.
 - Un comentario debe pertenecer a un ticket existente y tener contenido no vacío.
 - Una categoría inactiva no se puede asignar a tickets nuevos, pero no debe borrar el historial anterior.
@@ -235,18 +250,39 @@ El primer incremento funcional estará listo cuando:
 7. Los ejemplos de uso estén guardados en una colección de Postman o documentados en el repositorio.
 8. Al eliminar un ticket, la API responda `204 No Content`, lo excluya del listado normal y responda `404 Not Found` al consultarlo, modificarlo o agregarle comentarios; sus datos e historial se conservan en la base.
 
-## 11. Supuestos y preguntas abiertas
+## 11. Supuestos
 
-- La primera versión es backend REST, sin frontend.
-- El uso simultáneo de MySQL y Oracle se planifica como etapa del curso; confirmar disponibilidad de ambas bases. La distribución objetivo es MySQL para el dominio operativo y Oracle para auditoría centralizada.
-- Acordar el formato de intercambio de archivos, productores externos, estructura y permisos de la carpeta, frecuencia de carga y retención de archivos procesados/rechazados.
-- Definir la identidad del actor y el tratamiento de IP. Mientras no exista autenticación, no atribuir acciones a requesterId o supportAgentId por inferencia; usar actor de sistema o desconocido.
-- Definir cuál estado dispara el correo (`RESOLVED`, `CLOSED` o ambos), la dirección del administrador y el entorno SMTP.
-- Los reportes batch serán agregados por defecto; definir periodicidad, destinatarios, formato y retención antes de implementarlos.
-- Confirmar las versiones de Java y Spring Boot para el entorno de clase y evaluación, por la diferencia entre el temario y la configuración técnica usada en clase.
-- Confirmar si la evaluación exige Docker, despliegue cloud, correo, Quartz o Swagger/OpenAPI.
-- Definir si comentarios del solicitante y notas internas del agente tienen visibilidad distinta.
-- Aprobar las transiciones de estado, condiciones de cierre y reapertura, y si un cambio de estado exige comentario.
-- Definir qué servicio externo se consumirá. Candidato: catálogo de activos de TI para complementar tickets de hardware; especificar autenticación ante el proveedor, timeout, tratamiento de errores HTTP/de red y comportamiento ante indisponibilidad. Mantener separada esta decisión de habilitar autenticación/autorización en la API propia.
-- Definir si el alcance requiere SLA y cómo medir el tiempo de atención.
-- Supplier solo se agrega como entidad si se implementa el escalamiento de tickets a proveedores externos.
+- El sistema es backend REST, sin frontend; se prueba con Postman y Swagger.
+- Se usan tres bases relacionales: MySQL (operativa), Oracle (auditoría central) y PostgreSQL (histórico de tickets). No hay claves foráneas ni relaciones JPA entre bases.
+- Se usan datos ficticios. Credenciales, API keys y destinatarios de correo se configuran con variables de entorno, fuera del repositorio.
+
+## 12. Decisiones de diseño
+
+| # | Tema | Decisión |
+|---|---|---|
+| A1 | Estado inicial | El sistema crea el ticket en `OPEN`; se retira `status` del DTO de creación |
+| A2 | Cambio de estado | Endpoint propio `PATCH /tickets/{id}/status` con motivo; `PUT` no cambia el estado |
+| A3 | Transiciones | Las de la tabla de la sección 6 |
+| A4 | Notas obligatorias | Nota de resolución al pasar a `RESOLVED`; motivo al cerrar sin resolver |
+| A5 | Número legible | `TCK-<año>-<consecutivo de 6 dígitos>`, por ejemplo `TCK-2026-000123` |
+| A6 | Patrones de dominio | Chain of Responsibility para validar la creación (solicitante, categoría activa, agente activo); Strategy para calcular el SLA según la prioridad; transiciones declaradas en el enum `TicketStatus` |
+| A7 | Actor | Header opcional `X-User-Id`; si falta, `SYSTEM` |
+| B1 | Procedimiento almacenado | `usp_ticket_indicators` en MySQL: cantidades por estado y categoría y tiempo promedio de resolución (RF-10) |
+| B2 | VO | Vista `vw_ticket_summary` en MySQL mapeada a una entidad de solo lectura |
+| B3 | Projections | Interfaz de proyección para el listado resumido de tickets |
+| B4 | Esquema | Scripts SQL para procedimiento, vista y datos iniciales; las tablas siguen gestionadas por Hibernate (`update`) |
+| B5 | Tercera base | PostgreSQL como histórico de tickets, alimentado por Spring Batch |
+| C1 | Integración externa con token | Saliente: catálogo de activos de TI en escuelajs (login + Bearer). Entrante: portal de clientes externos protegido con `X-API-Key` |
+| C2 | Integración interna sin seguridad | Directorio de empleados (jsonplaceholder `users`) para completar datos del solicitante |
+| C3 | Correo | Al pasar a `RESOLVED`: notificación pendiente en la misma transacción y envío a `TICKET_ADMIN_EMAIL`; Mailpit en Docker para la demo |
+| C4 | Jobs | Quartz para el envío de correos; el relay de auditoría sigue con `@Scheduled` |
+| C5 | Mensajería | Notificaciones por correo desacopladas mediante tabla de pendientes y job |
+| C6 | Proceso batch | Spring Batch a demanda: `POST /api/v1/batch/ticket-history` (respuesta `202` con `executionId`) y consulta de estado; lectura paginada de MySQL y escritura idempotente (upsert) en PostgreSQL |
+| D1 | Respuesta estándar | `CustomResponse` en todos los endpoints |
+| D2 | Controllers | `GenericController` + implementación para Category, Requester y SupportAgent (CRUD con borrado lógico); Ticket con controller propio que hereda la clase base |
+| D3 | Documentación | Swagger para toda la API; REST Docs para los endpoints de Ticket |
+| D4 | Anotaciones propias | `@ValidPhone` (formato colombiano) y `@ValidTicketNumber` |
+| E1 | Ramas | Una rama por fase → `develop` → `main` con tag `mvp-final` |
+| E2 | Despliegue | Docker Compose |
+| E3 | Diagramas | Mermaid en el README |
+| E4 | Pruebas | Colección de Postman por fase en `docs/`; pruebas automáticas del dominio y las que exige REST Docs |

@@ -1,5 +1,7 @@
 package com.co.support.it.support_ticket_system.business.ticket.service;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
@@ -74,8 +76,8 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public Page<TicketResponseDto> findAll(
-            String status,
-            String priority,
+            TicketStatus status,
+            TicketPriority priority,
             Long categoryId,
             Long supportAgentId,
             Pageable pageable
@@ -86,12 +88,12 @@ public class TicketServiceImpl implements TicketService {
                         cb.isNull(root.get("deletedAt"))
                 );
 
-        if (status != null && !status.isBlank()) {
+        if (status != null) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("status"), status));
         }
 
-        if (priority != null && !priority.isBlank()) {
+        if (priority != null) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("priority"), priority));
         }
@@ -159,7 +161,7 @@ public class TicketServiceImpl implements TicketService {
         TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new TicketNotFoundException(id));
 
-        String previousStatus = ticket.getStatus();
+        TicketStatus previousStatus = ticket.getStatus();
 
         ticketMapper.updateEntityFromDto(updatedTicketRequestDto, ticket);
 
@@ -175,7 +177,7 @@ public class TicketServiceImpl implements TicketService {
                         : findSupportAgent(updatedTicketRequestDto.supportAgentId())
         );
 
-        if (!previousStatus.equals(ticket.getStatus())) {
+        if (previousStatus != ticket.getStatus()) {
             TicketStatusHistoryEntity history = new TicketStatusHistoryEntity();
             history.setTicket(ticket);
             history.setPreviousStatus(previousStatus);
@@ -232,8 +234,8 @@ public class TicketServiceImpl implements TicketService {
             Long ticketId,
             String ticketNumber,
             String title,
-            String priority,
-            String status,
+            TicketPriority priority,
+            TicketStatus status,
             Long requesterId,
             Long categoryId,
             Long supportAgentId

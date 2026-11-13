@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.business.ticket.entity;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,11 +22,13 @@ public class TicketStatusHistoryEntity {
     @JoinColumn(name = "ticket_id", nullable = false)
     private TicketEntity ticket;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "previous_status", nullable = false, length = 30)
-    private String previousStatus;
+    private TicketStatus previousStatus;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "new_status", nullable = false, length = 30)
-    private String newStatus;
+    private TicketStatus newStatus;
 
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;

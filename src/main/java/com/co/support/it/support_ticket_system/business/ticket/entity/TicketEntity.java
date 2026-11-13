@@ -5,6 +5,8 @@ package com.co.support.it.support_ticket_system.business.ticket.entity;
 import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
 import com.co.support.it.support_ticket_system.business.requester.entity.RequesterEntity;
 import com.co.support.it.support_ticket_system.business.supportagent.entity.SupportAgentEntity;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,11 +34,13 @@ public class TicketEntity {
     @Column(nullable = false, length = 2000)
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String priority = "MEDIUM";
+    private TicketPriority priority = TicketPriority.MEDIUM;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private String status= "OPEN";
+    private TicketStatus status = TicketStatus.OPEN;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
