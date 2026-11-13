@@ -1,5 +1,7 @@
 package com.co.support.it.support_ticket_system.business.ticket.service;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
@@ -11,8 +13,8 @@ import java.util.List;
 
 public interface TicketService {
     Page<TicketResponseDto> findAll(
-            String status,
-            String priority,
+            TicketStatus status,
+            TicketPriority priority,
             Long categoryId,
             Long supportAgentId,
             Pageable pageable

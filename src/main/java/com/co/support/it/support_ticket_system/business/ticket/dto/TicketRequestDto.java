@@ -1,5 +1,7 @@
 package com.co.support.it.support_ticket_system.business.ticket.dto;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -26,12 +28,10 @@ public record TicketRequestDto (
         @Positive(message = "El identificador del agente debe ser positivo")
         Long supportAgentId,
 
-        @NotBlank(message = "La prioridad es obligatoria")
-        @Size(max = 20, message = "La prioridad no debe superar los 20 caracteres")
-        String priority ,
+        @NotNull(message = "La prioridad es obligatoria")
+        TicketPriority priority,
 
-        @NotBlank(message = "El estado es obligatorio")
-        @Size(max = 30, message = "El estado no debe tener más de 30 caracteres")
-        String status
+        @NotNull(message = "El estado es obligatorio")
+        TicketStatus status
 ){
 }

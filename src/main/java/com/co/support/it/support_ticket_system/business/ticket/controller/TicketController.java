@@ -1,5 +1,7 @@
 package com.co.support.it.support_ticket_system.business.ticket.controller;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.service.TicketService;
@@ -29,8 +31,8 @@ public class TicketController {
 
     @GetMapping
     public ResponseEntity<Page<TicketResponseDto>> findAll(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) TicketStatus status,
+            @RequestParam(required = false) TicketPriority priority,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long supportAgentId,
             @PageableDefault(

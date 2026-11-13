@@ -1,5 +1,8 @@
 package com.co.support.it.support_ticket_system.business.ticket.dto;
 
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
+import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
+
 import java.time.LocalDateTime;
 
 public record TicketResponseDto(
@@ -17,8 +20,8 @@ public record TicketResponseDto(
         Long supportAgentId,
         String supportAgentName,
         String supportAgentSurname,
-        String priority,
-        String status,
+        TicketPriority priority,
+        TicketStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
