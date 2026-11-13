@@ -53,7 +53,7 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 
 - Distinguir `business` específico de `generic` reutilizable, contratos de sus implementaciones y herencia de composición.
 - Crear interfaces o clases genéricas cuando haya operaciones equivalentes en más de un módulo y sus variaciones estén identificadas. Mantener servicios, consultas y reglas particulares de Ticket en su módulo; no forzar todo a CRUD genérico.
-- Usar herencia de entidades solo cuando el modelo exprese una relación real. `@MappedSuperclass` puede compartir campos persistentes comunes si existe esa necesidad. Estudiar `SINGLE_TABLE`, `JOINED` y `TABLE_PER_CLASS` como alternativas del curso y documentar sus efectos; no agregar jerarquías artificiales a Requester, SupportAgent, Category o Ticket para demostrar anotaciones.
+- Usar herencia de entidades solo cuando el modelo exprese una relación real. `@MappedSuperclass` puede compartir campos persistentes comunes si existe esa necesidad. Estudiar `SINGLE_TABLE`, `JOINED` y `TABLE_PER_CLASS` como alternativas y documentar sus efectos; no agregar jerarquías artificiales a Requester, SupportAgent, Category o Ticket para demostrar anotaciones.
 - Registrar qué contratos se reutilizan, qué métodos quedan específicos y por qué. Evitar ciclos de dependencia entre `generic` y `business`.
 ### API y contratos
 
@@ -76,10 +76,8 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 - La escritura de auditoría originada por una operación de negocio se hará primero en una bandeja de salida local en MySQL dentro de la misma transacción. Un proceso reintentable la publicará en Oracle con identificadores idempotentes. No se dependerá de una transacción atómica distribuida entre las bases.
 - Cada base tendrá configuración, pool, entidades y repositorios separados. No crear relaciones JPA ni claves foráneas entre bases distintas.
 - La tabla central de auditoría será append-only y tendrá campos de origen, evento, entidad/acción, fecha, actor cuando esté disponible, IP confiable cuando corresponda, correlación y resultado. Minimizar los detalles almacenados. El historial de estados del ticket sigue siendo el registro funcional de su ciclo de vida.
-- La importación de otras aplicaciones usará archivos CSV o JSON Lines en una ruta configurable fuera del repositorio. Validar formato, detectar duplicados, guardar procesados/rechazados y proteger la carpeta con permisos adecuados. Considerar Spring Batch cuando se necesiten checkpoints, reanudación o procesamiento voluminoso; para cargas pequeñas se puede evaluar Quartz o `@Scheduled`.
-- Los eventos de auditoría podrán consultarse mediante endpoints de solo lectura, paginados y sujetos a autorización antes de exponer datos de actor, IP o detalles operativos.
+- El histórico de tickets se alimenta con un proceso Spring Batch lanzado a demanda: lectura paginada en MySQL, transformación y escritura idempotente (upsert) en PostgreSQL, procesando por bloques (chunks) y registrando el resultado de cada ejecución.
 - Las notificaciones de correo se crearán por eventos de negocio, en particular por transición a estado final del ticket, y se enviarán asíncronamente a destinatarios configurables. Guardar estado e intentos para reintentar sin revertir la operación del ticket. Las credenciales SMTP y correos de destinatarios se configuran fuera del repositorio.
-- Los reportes programados podrán generar resúmenes agregados de auditoría y enviarlos por correo; definir frecuencia, formato, destinatarios y retención minimizando datos personales.
 - Consumir servicios externos mediante adaptadores en `integration`, separados del negocio y configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. La interfaz del puerto debe expresar las necesidades del negocio; el adaptador traduce el protocolo y los DTOs externos. Usar el identificador recibido en cada operación, tratar respuestas vacías explícitamente y no registrar credenciales ni tokens.
 
 ### Reutilización
@@ -93,60 +91,56 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 - No subir contraseñas, tokens, claves ni datos personales reales al repositorio.
 - Usar variables de entorno o configuración local ignorada por Git para credenciales. No imprimir credenciales ni tokens en logs.
 - Mantener perfiles de desarrollo y despliegue explícitos y definir timeouts para llamadas externas, junto con el tratamiento de fallos de red y respuestas HTTP no exitosas.
-- Distinguir la autenticación de la aplicación ante un proveedor externo (por ejemplo, obtener y usar un token para una API) de la autenticación/autorización de usuarios en la API propia. Esta última puede planificarse como ampliación posterior, salvo que el profesor la solicite antes.
+- Distinguir la autenticación de la aplicación ante un proveedor externo (por ejemplo, obtener y usar un token para una API) de la autenticación/autorización de usuarios en la API propia. La API no implementa login de usuarios: el portal de clientes externos se protege con API key y el actor de cada operación se toma del header `X-User-Id`.
 
 ## 3. Stack tecnológico
 
-### Base del primer MVP
+### Componentes
 
 | Área | Selección de trabajo | Uso |
 |---|---|---|
-| Lenguaje y runtime | Java, alineado con el JDK solicitado por el profesor | Desarrollo y ejecución |
-| Framework | Spring Boot, con versión tomada del repositorio actualizado de clase | Configuración y arranque de la aplicación |
+| Lenguaje y runtime | Java 25 | Desarrollo y ejecución |
+| Framework | Spring Boot 4.1.x | Configuración y arranque de la aplicación |
 | Construcción | Maven Wrapper (`mvnw`) | Compilar con Maven sin depender de una instalación local idéntica |
 | API | Spring Web MVC | Controladores y endpoints REST |
 | Persistencia | Spring Data JPA | Repositorios y operaciones CRUD |
 | Validación | Jakarta Bean Validation / Spring Boot Validation | Validación declarativa de DTOs |
-| Mapeo | MapStruct | Conversión entre DTOs y entidades cuando se incorpore esa capa |
+| Mapeo | MapStruct | Conversión entre DTOs y entidades |
 | Productividad | Lombok, de forma moderada | Reducir código repetitivo |
-| Base operativa candidata | MySQL | Tickets, categorías, comentarios e historial |
-| Base de auditoría central | Oracle | Eventos de auditoría de esta aplicación y de otros sistemas |
-| Base local de desarrollo | H2, si resulta conveniente | Ejecuciones rápidas; no sustituye la verificación de MySQL y Oracle |
-| Pruebas | Dependencias de prueba administradas por Spring Boot | Pruebas unitarias y de integración cuando se implemente cada etapa |
-| Cliente REST | Postman | Ejercitar endpoints y guardar colecciones de solicitudes |
-| Control de versiones | Git y GitHub | Historial por ramas arquitectónicas y etiquetas de MVP |
+| Base operativa | MySQL 8.4 | Tickets, categorías, solicitantes, agentes, comentarios, historial, bandeja de salida y notificaciones |
+| Base de auditoría central | Oracle Free | Eventos de auditoría de esta aplicación y de otros sistemas |
+| Base histórica | PostgreSQL | Histórico de tickets alimentado por Spring Batch |
+| Base local de desarrollo | H2 | Ejecuciones rápidas; no sustituye la verificación con Docker |
+| Procesos batch | Spring Batch | Volcado masivo de tickets a demanda hacia PostgreSQL |
+| Tareas programadas | Quartz y `@Scheduled` | Envío de correos (Quartz) y relay de auditoría (`@Scheduled`) |
+| Correo | Spring Mail + Mailpit | Notificación de tickets resueltos; Mailpit captura los correos en desarrollo |
+| Cliente HTTP | `RestClient` | Servicio externo de activos (con token) y directorio interno (sin seguridad) |
+| Documentación API | springdoc-openapi (Swagger) y Spring REST Docs | Contrato navegable y documentación `.html` generada desde pruebas |
+| Pruebas | Dependencias de prueba administradas por Spring Boot | Pruebas del dominio y pruebas de REST Docs |
+| Cliente REST | Postman | Una carpeta de pruebas por fase en `docs/JavaArchitecture.postman_collection.json` |
+| Contenedores | Docker y Docker Compose | MySQL, Oracle, PostgreSQL, Mailpit y la aplicación |
+| Control de versiones | Git y GitHub | Una rama por fase y etiqueta `mvp-final` |
 
-Las versiones concretas de las dependencias se gestionan en `pom.xml`; se deben copiar de la versión de clase que el profesor confirme y mantener coherentes entre sí.
+Las versiones concretas de las dependencias se gestionan en `pom.xml`.
 
-### Diferencia de versiones que debe confirmarse
+### Versiones
 
-El temario y la configuración de los materiales de clase presentan discrepancias de versiones: el temario menciona Spring Boot 3.0 y JDK 11, 20 y 26, mientras que la configuración técnica revisada usa Spring Boot 4.1.1 y Java 25. MapStruct 1.6.3, Lombok 1.18.42 y `maven-compiler-plugin` 3.13.0 también aparecen en esa configuración. No mezclar versiones sin validar compatibilidad con el entorno de evaluación.
+**Java 25** y **Spring Boot 4.1.x**, con MapStruct, Lombok y `maven-compiler-plugin` 3.13.0.
 
-**Decisión provisional:** antes de crear el `pom.xml` del sistema, confirmar con el profesor qué JDK y versión de Spring Boot usarán para el desarrollo y evaluación. Alinear las dependencias y la configuración de compilación con el entorno requerido, validando su compatibilidad.
+## 4. Decisiones técnicas registradas
 
-## 4. Tecnologías del curso para etapas posteriores
-
-No son prerrequisitos para el primer CRUD; se incorporarán cuando el roadmap llegue a ellos:
-
-- **Diseño y SQL:** Oracle SQL Developer Data Modeler; scripts de tablas, claves, índices y datos iniciales; SQL y JPQL.
-- **Persistencia avanzada:** relaciones JPA, herencia, `@MappedSuperclass`, paginación, ordenamiento, procedimientos almacenados, triggers, auditoría centralizada y pools de conexiones a MySQL y Oracle.
-- **Negocio e integración:** MapStruct/ModelMapper, consumo de servicios web, tokens, Java Mail, importación de auditoría desde archivos, Oracle como repositorio central, Quartz/`@Scheduled` y reportes batch.
-- **REST:** Swagger/OpenAPI, `@ControllerAdvice`, versionamiento de API, respuestas personalizadas y HATEOAS cuando aporte valor.
-- **Empaque y despliegue:** JAR/WAR, Apache Tomcat, JBoss EAP/WildFly, Docker, Docker Compose y AWS Elastic Beanstalk.
-- Motores mencionados: Oracle, MySQL y PostgreSQL. Para el caso de dos bases se propone inicialmente MySQL y Oracle; PostgreSQL queda fuera de este alcance salvo que el profesor indique otra cosa.
-- **Herramientas auxiliares:** IDE (IntelliJ IDEA, STS o Eclipse) y JSONLint para revisar JSON cuando sea necesario.
-
-## 5. Decisiones técnicas registradas
-
-| Decisión | Estado inicial |
+| Decisión | Estado |
 |---|---|
 | Estilo arquitectónico | Monolito modular en capas |
-| Organización de paquetes | Iniciar por capas y migrar gradualmente a módulos de negocio por funcionalidad; reservar `generic` para contratos y componentes con reutilización comprobada. Mantener integraciones y configuración de infraestructura separadas |
-| Bases de datos | MySQL para datos operativos; Oracle para auditoría centralizada. La importación de auditoría puede provenir de archivos depositados por otros sistemas |
-| Integración externa | Caso de uso y servicio proveedor pendientes de definir; candidato: consulta de información de activos de TI |
-| Autenticación externa | Aplicar solo si el proveedor elegido la requiere; gestionar credenciales fuera del repositorio y no registrar tokens |
+| Organización de paquetes | Módulos por funcionalidad en `business/*`; contratos y componentes reutilizables en `generic`; integraciones e infraestructura separadas |
+| Abstracciones genéricas | Se adoptan `GenericController`, `GenericService`, `CustomResponse` y la jerarquía de excepciones porque ya hay tres catálogos equivalentes (Category, Requester, SupportAgent). Ticket conserva servicio y reglas propias |
+| Bases de datos | MySQL operativa, Oracle para auditoría central, PostgreSQL para el histórico |
 | Relaciones entre bases | Sin claves foráneas ni relaciones JPA cruzadas; usar identificadores y consultar la fuente propietaria |
-| JDK y Spring Boot | Pendientes de confirmación por discrepancia entre temario y ejemplos |
-| Interfaz de usuario | Fuera de alcance inicial; API REST probada con Postman |
-| Autenticación | Fuera del primer MVP; se revisará si se exige en el curso |
-| Integraciones externas | Posteriores al flujo principal de tickets |
+| Integración externa saliente | Catálogo de activos de TI (escuelajs) con login y token Bearer; credenciales en variables de entorno, sin registrar tokens |
+| Integración externa entrante | Portal de clientes externos con `X-API-Key`, validada por un interceptor; no es un login de usuarios |
+| Integración interna | Directorio de empleados (jsonplaceholder) sin seguridad |
+| JDK y Spring Boot | Java 25 y Spring Boot 4.1.x |
+| Interfaz de usuario | API REST sin frontend, probada con Postman y Swagger |
+| Identificación del actor | Header `X-User-Id`; si no se envía, `SYSTEM` |
+
+El detalle completo de las decisiones de diseño está en la sección 12 de `02-analisis-de-requerimientos.md`.
