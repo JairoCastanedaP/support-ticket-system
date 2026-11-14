@@ -2,8 +2,8 @@ package com.co.support.it.support_ticket_system.business.ticket.dto;
 
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
-
-import java.time.LocalDateTime;
+import com.co.support.it.support_ticket_system.generic.dto.AuditResponseDto;
+import com.co.support.it.support_ticket_system.generic.dto.IdentifiableDto;
 
 public record TicketResponseDto(
         Long id,
@@ -22,7 +22,6 @@ public record TicketResponseDto(
         String supportAgentSurname,
         TicketPriority priority,
         TicketStatus status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
+        AuditResponseDto audit
+) implements IdentifiableDto<Long> {
 }

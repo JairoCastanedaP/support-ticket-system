@@ -187,7 +187,7 @@ public class TicketServiceImpl implements TicketService {
             ticketStatusHistoryRepository.save(history);
         }
 
-        TicketEntity updatedTicket = ticketRepository.save(ticket);
+        TicketEntity updatedTicket = ticketRepository.saveAndFlush(ticket);
         return ticketMapper.toResponseDto(updatedTicket);
     }
     @Override

@@ -4,88 +4,53 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPrio
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
-import com.co.support.it.support_ticket_system.business.ticket.service.TicketService;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
+import com.co.support.it.support_ticket_system.generic.controller.response.CustomResponse;
+import com.co.support.it.support_ticket_system.generic.controller.response.PageResponse;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 
-import java.net.URI;
 import java.util.List;
 
-@Slf4j
-@RestController
-@RequestMapping("/api/v1/tickets")
-public class TicketController {
+import static com.co.support.it.support_ticket_system.business.shared.constants.APIEndPoints.BY_ID;
+import static com.co.support.it.support_ticket_system.business.shared.constants.APIEndPoints.TICKET_STATUS_HISTORY;
 
-    private final TicketService ticketService;
-
-    public TicketController(TicketService ticketService){
-        this.ticketService= ticketService;
-    }
+/**
+ * Contrato REST de tickets. Tiene operaciones propias (filtros, paginación, historial),
+ * por eso no extiende el CRUD genérico.
+ */
+public interface TicketController {
 
     @GetMapping
-    public ResponseEntity<Page<TicketResponseDto>> findAll(
+    ResponseEntity<CustomResponse<PageResponse<TicketResponseDto>>> findAll(
             @RequestParam(required = false) TicketStatus status,
             @RequestParam(required = false) TicketPriority priority,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long supportAgentId,
-            @PageableDefault(
-                    size = 20,
-                    sort = "id",
-                    direction = Sort.Direction.DESC
-            ) Pageable pageable
-    ) {
-        return ResponseEntity.ok(
-                ticketService.findAll(
-                        status,
-                        priority,
-                        categoryId,
-                        supportAgentId,
-                        pageable
-                )
-        );
-    }
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    );
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TicketResponseDto> findById(@PathVariable Long id){
-        return ResponseEntity.ok(ticketService.findById(id));
-    }
+    @GetMapping(BY_ID)
+    ResponseEntity<CustomResponse<TicketResponseDto>> findById(@PathVariable("id") Long id);
 
     @PostMapping
-    public ResponseEntity<TicketResponseDto> save(@Valid @RequestBody TicketRequestDto ticket){
-        //log.info("Saving Ticket: {}",ticket);
-        TicketResponseDto savedTicket= ticketService.save(ticket);
-        URI location = URI.create("/api/v1/tickets/" + savedTicket.id());
-        return ResponseEntity.created(location).body(savedTicket);
-    }
+    ResponseEntity<CustomResponse<TicketResponseDto>> save(@Valid @RequestBody TicketRequestDto request);
 
-    @PutMapping("/{id}")
-    public ResponseEntity<TicketResponseDto> update(
-            @PathVariable Long id,
-            @Valid @RequestBody TicketRequestDto ticketRequestDto
-    ){
-        log.info("Updating ticket with id: {}", id);
+    @PutMapping(BY_ID)
+    ResponseEntity<CustomResponse<TicketResponseDto>> update(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody TicketRequestDto request
+    );
 
-        return ResponseEntity.ok(
-                ticketService.update(id,ticketRequestDto)
-        );
-    }
-    @GetMapping("/{id}/status-history")
-    public ResponseEntity<List<TicketStatusHistoryResponseDto>> findStatusHistory(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(ticketService.findStatusHistory(id));
-    }
+    @DeleteMapping(BY_ID)
+    ResponseEntity<CustomResponse<Void>> delete(@PathVariable("id") Long id);
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        ticketService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
+    @GetMapping(TICKET_STATUS_HISTORY)
+    ResponseEntity<CustomResponse<List<TicketStatusHistoryResponseDto>>> findStatusHistory(
+            @PathVariable("id") Long id
+    );
 }

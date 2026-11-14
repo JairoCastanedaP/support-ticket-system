@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.business.supportagent.entity;
 
+import com.co.support.it.support_ticket_system.generic.entity.GenericEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +9,7 @@ import lombok.Setter;
 @Table(name = "support_agents")
 @Getter
 @Setter
-public class SupportAgentEntity {
+public class SupportAgentEntity extends GenericEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +27,4 @@ public class SupportAgentEntity {
 
     @Column(name = "phone_number", length = 30)
     private String phoneNumber;
-
-    @Column(nullable = false)
-    private boolean active = true;
 }
