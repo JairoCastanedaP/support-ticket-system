@@ -5,6 +5,8 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStat
 import com.co.support.it.support_ticket_system.generic.dto.AuditResponseDto;
 import com.co.support.it.support_ticket_system.generic.dto.IdentifiableDto;
 
+import java.time.LocalDateTime;
+
 public record TicketResponseDto(
         Long id,
         String ticketNumber,
@@ -22,6 +24,9 @@ public record TicketResponseDto(
         String supportAgentSurname,
         TicketPriority priority,
         TicketStatus status,
+        String resolutionNote,
+        LocalDateTime resolvedAt,
+        LocalDateTime closedAt,
         AuditResponseDto audit
 ) implements IdentifiableDto<Long> {
 }

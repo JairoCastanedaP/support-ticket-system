@@ -4,72 +4,64 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPrio
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusChangeRequestDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
-import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
-import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketStatusHistoryEntity;
+import com.co.support.it.support_ticket_system.business.ticket.exception.InvalidStatusTransitionException;
 import com.co.support.it.support_ticket_system.business.ticket.exception.TicketNotFoundException;
 import com.co.support.it.support_ticket_system.business.ticket.mapper.TicketMapper;
 import com.co.support.it.support_ticket_system.business.ticket.mapper.TicketStatusHistoryMapper;
-import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
-import com.co.support.it.support_ticket_system.business.requester.repository.RequesterRepository;
 import com.co.support.it.support_ticket_system.business.ticket.repository.TicketRepository;
+import com.co.support.it.support_ticket_system.business.ticket.repository.TicketStatusHistoryRepository;
+import com.co.support.it.support_ticket_system.business.ticket.service.status.TicketStatusChangeStrategyResolver;
+import com.co.support.it.support_ticket_system.business.ticket.service.validation.TicketValidationChain;
+import com.co.support.it.support_ticket_system.business.ticket.service.validation.TicketValidationContext;
+import com.co.support.it.support_ticket_system.generic.exception.BusinessRuleException;
+import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.entity.AuditOutboxEntity;
+import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.repository.AuditOutboxRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.co.support.it.support_ticket_system.business.supportagent.entity.SupportAgentEntity;
-import com.co.support.it.support_ticket_system.business.supportagent.exception.SupportAgentNotFoundException;
-import com.co.support.it.support_ticket_system.business.supportagent.repository.SupportAgentRepository;
-
-import com.co.support.it.support_ticket_system.business.ticket.entity.TicketStatusHistoryEntity;
-import com.co.support.it.support_ticket_system.business.ticket.repository.TicketStatusHistoryRepository;
-
-import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.entity.AuditOutboxEntity;
-import com.co.support.it.support_ticket_system.infrastructure.persistence.mysql.outbox.repository.AuditOutboxRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
 public class TicketServiceImpl implements TicketService {
 
-    private final TicketRepository ticketRepository;
-    private final RequesterRepository requesterRepository;
-    private final CategoryRepository categoryRepository;
-    private final SupportAgentRepository supportAgentRepository;
-    private final TicketStatusHistoryRepository ticketStatusHistoryRepository;
-    private final TicketStatusHistoryMapper ticketStatusHistoryMapper;
-    private final TicketMapper ticketMapper;
+    private static final String SOURCE_SYSTEM = "support-ticket-system";
 
+    private final TicketRepository ticketRepository;
+    private final TicketStatusHistoryRepository ticketStatusHistoryRepository;
+    private final TicketMapper ticketMapper;
+    private final TicketStatusHistoryMapper ticketStatusHistoryMapper;
+    private final TicketValidationChain validationChain;
+    private final TicketStatusChangeStrategyResolver statusStrategyResolver;
     private final AuditOutboxRepository auditOutboxRepository;
     private final JsonMapper jsonMapper;
 
-
     public TicketServiceImpl(
             TicketRepository ticketRepository,
-            RequesterRepository requesterRepository,
-            CategoryRepository categoryRepository,
-            SupportAgentRepository supportAgentRepository,
             TicketStatusHistoryRepository ticketStatusHistoryRepository,
             TicketMapper ticketMapper,
             TicketStatusHistoryMapper ticketStatusHistoryMapper,
+            TicketValidationChain validationChain,
+            TicketStatusChangeStrategyResolver statusStrategyResolver,
             AuditOutboxRepository auditOutboxRepository,
             JsonMapper jsonMapper
     ) {
         this.ticketRepository = ticketRepository;
-        this.requesterRepository = requesterRepository;
-        this.categoryRepository = categoryRepository;
-        this.supportAgentRepository = supportAgentRepository;
         this.ticketStatusHistoryRepository = ticketStatusHistoryRepository;
         this.ticketMapper = ticketMapper;
         this.ticketStatusHistoryMapper = ticketStatusHistoryMapper;
+        this.validationChain = validationChain;
+        this.statusStrategyResolver = statusStrategyResolver;
         this.auditOutboxRepository = auditOutboxRepository;
         this.jsonMapper = jsonMapper;
     }
@@ -114,18 +106,106 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponseDto findById(Long id) {
-        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new TicketNotFoundException(id));
+        return ticketMapper.toResponseDto(findActiveTicket(id));
+    }
 
-        return ticketMapper.toResponseDto(ticket);
+    /**
+     * Crea el ticket siempre en OPEN, después de pasar la cadena de validación.
+     * El número legible se asigna cuando ya existe el id.
+     */
+    @Override
+    @Transactional
+    public TicketResponseDto save(TicketRequestDto request) {
+        TicketValidationContext context = validationChain.validate(request);
+
+        TicketEntity ticket = ticketMapper.toEntity(request);
+        ticket.setStatus(TicketStatus.OPEN);
+        applyRelations(ticket, context);
+
+        TicketEntity savedTicket = ticketRepository.save(ticket);
+        savedTicket.assignTicketNumber();
+        savedTicket = ticketRepository.saveAndFlush(savedTicket);
+
+        registerEvent("TICKET_CREATED", savedTicket, new TicketCreatedPayload(
+                savedTicket.getId(),
+                savedTicket.getTicketNumber(),
+                savedTicket.getTitle(),
+                savedTicket.getPriority(),
+                savedTicket.getStatus(),
+                savedTicket.getRequester().getId(),
+                savedTicket.getCategory().getId(),
+                savedTicket.getAssignedAgent() == null ? null : savedTicket.getAssignedAgent().getId()
+        ));
+
+        return ticketMapper.toResponseDto(savedTicket);
+    }
+
+    /**
+     * Actualiza los datos del ticket. El estado no cambia aquí y un ticket cerrado no se puede editar.
+     */
+    @Override
+    @Transactional
+    public TicketResponseDto update(Long id, TicketRequestDto request) {
+        TicketEntity ticket = findActiveTicket(id);
+
+        if (ticket.getStatus() == TicketStatus.CLOSED) {
+            throw new BusinessRuleException("El ticket " + ticket.getTicketNumber() + " está cerrado y no se puede editar");
+        }
+
+        TicketValidationContext context = validationChain.validate(request);
+
+        ticketMapper.updateEntityFromDto(request, ticket);
+        applyRelations(ticket, context);
+
+        return ticketMapper.toResponseDto(ticketRepository.saveAndFlush(ticket));
+    }
+
+    /**
+     * Cambia el estado: valida la transición, aplica la estrategia del estado destino,
+     * registra el historial y deja el evento en el outbox de auditoría.
+     */
+    @Override
+    @Transactional
+    public TicketResponseDto changeStatus(Long id, TicketStatusChangeRequestDto request) {
+        TicketEntity ticket = findActiveTicket(id);
+        TicketStatus previousStatus = ticket.getStatus();
+        TicketStatus newStatus = request.status();
+
+        if (!previousStatus.canTransitionTo(newStatus)) {
+            throw new InvalidStatusTransitionException(previousStatus, newStatus);
+        }
+
+        statusStrategyResolver.resolve(newStatus).apply(ticket, request);
+        ticket.setStatus(newStatus);
+
+        String reason = request.reason() == null || request.reason().isBlank() ? null : request.reason().trim();
+
+        TicketStatusHistoryEntity history = new TicketStatusHistoryEntity();
+        history.setTicket(ticket);
+        history.setPreviousStatus(previousStatus);
+        history.setNewStatus(newStatus);
+        history.setReason(reason);
+        history.setChangedAt(LocalDateTime.now());
+        ticketStatusHistoryRepository.save(history);
+
+        TicketEntity updatedTicket = ticketRepository.saveAndFlush(ticket);
+
+        registerEvent("TICKET_STATUS_CHANGED", updatedTicket, new TicketStatusChangedPayload(
+                updatedTicket.getId(),
+                updatedTicket.getTicketNumber(),
+                previousStatus,
+                newStatus,
+                reason,
+                updatedTicket.getUpdatedBy()
+        ));
+
+        return ticketMapper.toResponseDto(updatedTicket);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        TicketEntity ticket =
-                ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
-                        .orElseThrow(() -> new TicketNotFoundException(id));
+        TicketEntity ticket = findActiveTicket(id);
 
         ticket.setActive(false);
         ticket.setDeletedAt(LocalDateTime.now());
@@ -134,94 +214,29 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    @Transactional
-    public TicketResponseDto save(TicketRequestDto ticketRequestDto) {
-        TicketEntity ticket = ticketMapper.toEntity(ticketRequestDto);
-
-        ticket.setRequester(requesterRepository.findById(ticketRequestDto.requesterId())
-                .orElseThrow(() -> new RequesterNotFoundException(ticketRequestDto.requesterId())));
-
-        ticket.setCategory(categoryRepository.findById(ticketRequestDto.categoryId())
-                .orElseThrow(() -> new CategoryNotFoundException(ticketRequestDto.categoryId())));
-
-        if (ticketRequestDto.supportAgentId() != null) {
-            ticket.setAssignedAgent(findSupportAgent(ticketRequestDto.supportAgentId()));
-        }
-
-        TicketEntity savedTicket = ticketRepository.save(ticket);
-
-        registerTicketCreatedEvent(savedTicket);
-
-        return ticketMapper.toResponseDto(savedTicket);
-    }
-
-    @Override
-    @Transactional
-    public TicketResponseDto update(Long id, TicketRequestDto updatedTicketRequestDto) {
-        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new TicketNotFoundException(id));
-
-        TicketStatus previousStatus = ticket.getStatus();
-
-        ticketMapper.updateEntityFromDto(updatedTicketRequestDto, ticket);
-
-        ticket.setRequester(requesterRepository.findById(updatedTicketRequestDto.requesterId())
-                .orElseThrow(() -> new RequesterNotFoundException(updatedTicketRequestDto.requesterId())));
-
-        ticket.setCategory(categoryRepository.findById(updatedTicketRequestDto.categoryId())
-                .orElseThrow(() -> new CategoryNotFoundException(updatedTicketRequestDto.categoryId())));
-
-        ticket.setAssignedAgent(
-                updatedTicketRequestDto.supportAgentId() == null
-                        ? null
-                        : findSupportAgent(updatedTicketRequestDto.supportAgentId())
-        );
-
-        if (previousStatus != ticket.getStatus()) {
-            TicketStatusHistoryEntity history = new TicketStatusHistoryEntity();
-            history.setTicket(ticket);
-            history.setPreviousStatus(previousStatus);
-            history.setNewStatus(ticket.getStatus());
-            history.setChangedAt(LocalDateTime.now());
-
-            ticketStatusHistoryRepository.save(history);
-        }
-
-        TicketEntity updatedTicket = ticketRepository.saveAndFlush(ticket);
-        return ticketMapper.toResponseDto(updatedTicket);
-    }
-    @Override
     public List<TicketStatusHistoryResponseDto> findStatusHistory(Long ticketId) {
-        ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(ticketId)
-                .orElseThrow(() -> new TicketNotFoundException(ticketId));
+        findActiveTicket(ticketId);
 
         return ticketStatusHistoryMapper.toResponseDtoList(
-                ticketStatusHistoryRepository
-                        .findByTicket_IdOrderByChangedAtAsc(ticketId)
+                ticketStatusHistoryRepository.findByTicket_IdOrderByChangedAtAsc(ticketId)
         );
     }
 
-    private SupportAgentEntity findSupportAgent(Long id) {
-        return supportAgentRepository.findById(id)
-                .orElseThrow(() -> new SupportAgentNotFoundException(id));
+    private TicketEntity findActiveTicket(Long id) {
+        return ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new TicketNotFoundException(id));
     }
-    private void registerTicketCreatedEvent(TicketEntity ticket) {
-        TicketCreatedPayload payload = new TicketCreatedPayload(
-                ticket.getId(),
-                ticket.getTicketNumber(),
-                ticket.getTitle(),
-                ticket.getPriority(),
-                ticket.getStatus(),
-                ticket.getRequester().getId(),
-                ticket.getCategory().getId(),
-                ticket.getAssignedAgent() == null
-                        ? null
-                        : ticket.getAssignedAgent().getId()
-        );
 
+    private void applyRelations(TicketEntity ticket, TicketValidationContext context) {
+        ticket.setRequester(context.getRequester());
+        ticket.setCategory(context.getCategory());
+        ticket.setAssignedAgent(context.getSupportAgent());
+    }
+
+    private void registerEvent(String eventType, TicketEntity ticket, Object payload) {
         AuditOutboxEntity event = new AuditOutboxEntity();
-        event.setSourceSystem("support-ticket-system");
-        event.setEventType("TICKET_CREATED");
+        event.setSourceSystem(SOURCE_SYSTEM);
+        event.setEventType(eventType);
         event.setEntityType("TICKET");
         event.setEntityId(ticket.getId().toString());
         event.setOccurredAtUtc(Instant.now());
@@ -239,6 +254,16 @@ public class TicketServiceImpl implements TicketService {
             Long requesterId,
             Long categoryId,
             Long supportAgentId
+    ) {
+    }
+
+    private record TicketStatusChangedPayload(
+            Long ticketId,
+            String ticketNumber,
+            TicketStatus previousStatus,
+            TicketStatus newStatus,
+            String reason,
+            String changedBy
     ) {
     }
 }

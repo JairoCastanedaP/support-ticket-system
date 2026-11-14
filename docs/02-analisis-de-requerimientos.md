@@ -30,7 +30,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 ### Incluido en la entrega final
 
 - Cambio de estado mediante transiciones controladas, con nota de resolución o motivo cuando se requiera.
-- Número de ticket legible (`TCK-2026-000123`) y fecha límite de atención (SLA) calculada según la prioridad.
+- Número de ticket legible (`TCK-2026-000123`).
 - Indicadores mediante procedimiento almacenado y listado resumido mediante vista de base de datos.
 - Consulta de activos de TI en un servicio externo protegido con token (login + Bearer).
 - Consulta de datos del solicitante en un directorio de empleados interno (sin seguridad).
@@ -84,7 +84,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 | RF-12 | Notificar por correo al administrador cuando un ticket pase a `RESOLVED`; configurar el destinatario fuera del código | Must; etapa 10 |
 | RF-13 | Eliminar lógicamente un ticket, excluirlo de consultas normales y conservar su registro e historial | Must |
 | RF-14 | Registrar eventos de auditoría en un almacén central separado del historial funcional del ticket | Must; etapa 06 |
-| RF-15 | Calcular la fecha límite de atención (SLA) según la prioridad del ticket | Must; etapa 08 |
+| RF-15 | Controlar el ciclo de vida del ticket con transiciones permitidas y registrar en el historial el motivo y el usuario de cada cambio | Must; etapa 08 |
 | RF-16 | Asociar opcionalmente un activo de TI al ticket y consultar su detalle en el servicio externo protegido con token | Must; etapa 10 |
 | RF-17 | Completar los datos del solicitante con el directorio de empleados interno | Should; etapa 10 |
 | RF-18 | Permitir que un cliente externo consulte un ticket por su número con una API key, recibiendo solo datos no internos | Must; etapa 10 |
@@ -107,7 +107,8 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 - El ticket se crea siempre en `OPEN`; el cliente no envía el estado.
 - El estado se cambia solo con `PATCH /api/v1/tickets/{id}/status`, indicando el estado destino y el motivo o nota. `PUT` no modifica el estado.
 - Una transición no listada responde `409 Conflict` y no guarda cambios.
-- Toda transición válida queda registrada en `ticket_status_history`.
+- Toda transición válida queda registrada en `ticket_status_history` y genera el evento de auditoría `TICKET_STATUS_CHANGED`.
+- Si falta la nota o el motivo obligatorio, la API responde `400 Bad Request`.
 - La reasignación de agente no cambia el estado: se hace sin pasar por `OPEN`.
 
 ## 7. Requerimientos no funcionales
@@ -127,7 +128,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 
 ## 8. Modelo relacional inicial
 
-El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. La etapa 08 completa los campos de resolución, motivo y fecha límite. MySQL conserva este modelo; Oracle tiene un modelo separado de eventos de auditoría (etapa 06) y PostgreSQL el histórico de tickets (etapa 11).
+El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. La etapa 08 completa los campos de resolución y cierre, y el motivo y el usuario de cada cambio de estado. MySQL conserva este modelo; Oracle tiene un modelo separado de eventos de auditoría (etapa 06) y PostgreSQL el histórico de tickets (etapa 11).
 
 ~~~mermaid
 erDiagram
@@ -170,6 +171,8 @@ erDiagram
         boolean is_active
         datetime deleted_at
         text resolution_note
+        datetime resolved_at
+        datetime closed_at
         bigint requester_id FK
         bigint category_id FK
         bigint assigned_agent_id FK
@@ -191,8 +194,7 @@ erDiagram
         varchar previous_status
         varchar new_status
         varchar reason
-        varchar actor_type
-        bigint actor_id
+        varchar changed_by
         datetime changed_at
     }
 ~~~
@@ -212,9 +214,9 @@ erDiagram
 - Category: nombre obligatorio y único, descripción opcional y estado activo/inactivo.
 - Ticket: número legible y único, título, descripción, prioridad, estado y fechas de creación/actualización. `is_active` y `deleted_at` registran la eliminación lógica: activo implica `is_active = true` y `deleted_at = null`; eliminado implica `is_active = false` y una fecha en `deleted_at`.
 - Priority y status se restringen a los enums `TicketPriority` y `TicketStatus` (etapa 06).
-- `resolution_note` se incorpora en la etapa 08 y es obligatoria al pasar a `RESOLVED`.
+- `resolution_note` y `resolved_at` se incorporan en la etapa 08 y se diligencian al pasar a `RESOLVED`; `closed_at` registra el cierre. Al reabrir un ticket resuelto se limpia la resolución anterior.
 - TicketComment almacena ticket, contenido y fecha.
-- TicketStatusHistory conserva ticket, estado anterior/nuevo y fecha; en la etapa 08 incorpora `reason` y el actor que ejecuta el cambio.
+- TicketStatusHistory conserva ticket, estado anterior/nuevo y fecha; en la etapa 08 incorpora `reason` y `changed_by`, el actor que ejecuta el cambio.
 - El actor se registra como texto (`X-User-Id` o `SYSTEM`), sin relación con una entidad de identidad.
 
 ### Persistencia y distribución entre bases
@@ -229,9 +231,9 @@ El evento central puede identificar el sistema origen, entidad/registro, acción
 - El título, la descripción, la categoría y un contacto válido son obligatorios para crear el ticket.
 - El sistema asigna el estado inicial `OPEN`; el contrato de creación deja de recibir `status` (etapa 08).
 - Estado y prioridad se restringen a los enums `TicketStatus` (`OPEN`, `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `RESOLVED`, `CLOSED`) y `TicketPriority` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`); un valor distinto responde `400 Bad Request`.
-- Un ticket asignado debe tener un agente activo.
+- Un ticket asignado debe tener un agente activo, y para pasar a `IN_PROGRESS` debe tener un agente asignado.
+- Un ticket `CLOSED` no se puede editar.
 - Pasar a `RESOLVED` exige nota de resolución; cerrar desde `OPEN` o `WAITING_FOR_REQUESTER` exige motivo.
-- La fecha límite (SLA) se calcula al crear el ticket según la prioridad y se recalcula si la prioridad cambia.
 - Todo cambio de estado debe generar un registro de historial.
 - Un comentario debe pertenecer a un ticket existente y tener contenido no vacío.
 - Una categoría inactiva no se puede asignar a tickets nuevos, pero no debe borrar el historial anterior.
@@ -248,7 +250,7 @@ El primer incremento funcional estará listo cuando:
 5. El ticket pueda asignarse a un agente activo y el cambio quede registrado.
 6. Una transición no permitida devuelva un conflicto controlado, sin dejar datos parcialmente actualizados.
 7. Los ejemplos de uso estén guardados en una colección de Postman o documentados en el repositorio.
-8. Al eliminar un ticket, la API responda `204 No Content`, lo excluya del listado normal y responda `404 Not Found` al consultarlo, modificarlo o agregarle comentarios; sus datos e historial se conservan en la base.
+8. Al eliminar un ticket, la API responda `200 OK`, lo excluya del listado normal y responda `404 Not Found` al consultarlo, modificarlo o agregarle comentarios; sus datos e historial se conservan en la base.
 
 ## 11. Supuestos
 
@@ -265,7 +267,7 @@ El primer incremento funcional estará listo cuando:
 | A3 | Transiciones | Las de la tabla de la sección 6 |
 | A4 | Notas obligatorias | Nota de resolución al pasar a `RESOLVED`; motivo al cerrar sin resolver |
 | A5 | Número legible | `TCK-<año>-<consecutivo de 6 dígitos>`, por ejemplo `TCK-2026-000123` |
-| A6 | Patrones de dominio | Chain of Responsibility para validar la creación (solicitante, categoría activa, agente activo); Strategy para calcular el SLA según la prioridad; transiciones declaradas en el enum `TicketStatus` |
+| A6 | Patrones de dominio | Chain of Responsibility para validar la creación y edición (solicitante, categoría y agente existentes y activos); Strategy para las reglas de cada estado destino; transiciones declaradas en el enum `TicketStatus` |
 | A7 | Actor | Header opcional `X-User-Id`; si falta, `SYSTEM` |
 | B1 | Procedimiento almacenado | `usp_ticket_indicators` en MySQL: cantidades por estado y categoría y tiempo promedio de resolución (RF-10) |
 | B2 | VO | Vista `vw_ticket_summary` en MySQL mapeada a una entidad de solo lectura |

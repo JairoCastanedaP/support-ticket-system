@@ -4,11 +4,14 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStat
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ticket_status_history")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 public class TicketStatusHistoryEntity {
@@ -29,6 +32,14 @@ public class TicketStatusHistoryEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "new_status", nullable = false, length = 30)
     private TicketStatus newStatus;
+
+    @Column(name = "reason", length = 1000)
+    private String reason;
+
+    /** Usuario que hizo el cambio (header X-User-Id o SYSTEM). */
+    @CreatedBy
+    @Column(name = "changed_by", length = 50)
+    private String changedBy;
 
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;

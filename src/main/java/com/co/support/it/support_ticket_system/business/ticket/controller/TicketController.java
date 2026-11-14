@@ -4,6 +4,7 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPrio
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusChangeRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 import com.co.support.it.support_ticket_system.generic.controller.response.CustomResponse;
 import com.co.support.it.support_ticket_system.generic.controller.response.PageResponse;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import static com.co.support.it.support_ticket_system.business.shared.constants.APIEndPoints.BY_ID;
+import static com.co.support.it.support_ticket_system.business.shared.constants.APIEndPoints.TICKET_STATUS;
 import static com.co.support.it.support_ticket_system.business.shared.constants.APIEndPoints.TICKET_STATUS_HISTORY;
 
 /**
@@ -44,6 +46,15 @@ public interface TicketController {
     ResponseEntity<CustomResponse<TicketResponseDto>> update(
             @PathVariable("id") Long id,
             @Valid @RequestBody TicketRequestDto request
+    );
+
+    /**
+     * Cambia el estado del ticket según las transiciones permitidas. Es la única vía para cambiarlo.
+     */
+    @PatchMapping(TICKET_STATUS)
+    ResponseEntity<CustomResponse<TicketResponseDto>> changeStatus(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody TicketStatusChangeRequestDto request
     );
 
     @DeleteMapping(BY_ID)
