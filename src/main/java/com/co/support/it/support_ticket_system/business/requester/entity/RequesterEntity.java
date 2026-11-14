@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.business.requester.entity;
 
+import com.co.support.it.support_ticket_system.generic.entity.GenericEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +9,8 @@ import lombok.Setter;
 @Table(name = "requesters")
 @Getter
 @Setter
-public class RequesterEntity {
+public class RequesterEntity extends GenericEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "requester_id")
@@ -25,8 +27,4 @@ public class RequesterEntity {
 
     @Column(name = "phone_number", length = 30)
     private String phoneNumber;
-
-    @Column(nullable = false)
-    private boolean active = true;
-
 }

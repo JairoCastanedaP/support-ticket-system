@@ -1,4 +1,3 @@
-
 package com.co.support.it.support_ticket_system.business.requester.service;
 
 import com.co.support.it.support_ticket_system.business.requester.dto.RequesterRequestDto;
@@ -7,6 +6,8 @@ import com.co.support.it.support_ticket_system.business.requester.entity.Request
 import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
 import com.co.support.it.support_ticket_system.business.requester.mapper.RequesterMapper;
 import com.co.support.it.support_ticket_system.business.requester.repository.RequesterRepository;
+import com.co.support.it.support_ticket_system.generic.exception.DuplicateException;
+import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
 import com.co.support.it.support_ticket_system.generic.service.GenericServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,8 @@ public class RequesterServiceImpl
         extends GenericServiceImpl<RequesterEntity, RequesterRequestDto, RequesterResponseDto, Long>
         implements RequesterService {
 
+    private final RequesterRepository requesterRepository;
+
     public RequesterServiceImpl(
             RequesterRepository requesterRepository,
             RequesterMapper requesterMapper
@@ -22,78 +25,27 @@ public class RequesterServiceImpl
         super(
                 requesterRepository,
                 requesterMapper::toEntity,
-                requesterMapper::toResponseDto
+                requesterMapper::toResponseDto,
+                requesterMapper::updateEntity
         );
+        this.requesterRepository = requesterRepository;
     }
 
     @Override
-    protected RuntimeException createNotFoundException(Long id) {
+    protected NotFoundException createNotFoundException(Long id) {
         return new RequesterNotFoundException(id);
     }
+
+    @Override
+    protected void validateUniqueness(RequesterRequestDto request, Long currentId) {
+        boolean duplicated = currentId == null
+                ? requesterRepository.existsByEmailIgnoreCase(request.email())
+                : requesterRepository.existsByEmailIgnoreCaseAndIdNot(request.email(), currentId);
+
+        if (duplicated) {
+            throw new DuplicateException(
+                    "Ya existe un registro de solicitante con el correo: " + request.email()
+            );
+        }
+    }
 }
-/*
-package com.co.support.it.support_ticket_system.business.requester.service;
-
-
-import com.co.support.it.support_ticket_system.business.requester.dto.RequesterRequestDto;
-import com.co.support.it.support_ticket_system.business.requester.dto.RequesterResponseDto;
-import com.co.support.it.support_ticket_system.business.requester.entity.RequesterEntity;
-import com.co.support.it.support_ticket_system.business.requester.exception.RequesterNotFoundException;
-import com.co.support.it.support_ticket_system.business.requester.mapper.RequesterMapper;
-import com.co.support.it.support_ticket_system.business.requester.repository.RequesterRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-@Service
-public class RequesterServiceImpl implements RequesterService {
-
-    private final RequesterRepository requesterRepository;
-    private final RequesterMapper requesterMapper;
-
-    public RequesterServiceImpl(
-            RequesterRepository requesterRepository,
-            RequesterMapper requesterMapper
-    ) {
-        this.requesterRepository = requesterRepository;
-        this.requesterMapper = requesterMapper;
-    }
-
-    @Override
-    public List<RequesterResponseDto> findAll() {
-        List<RequesterResponseDto> requesters = new ArrayList<>();
-
-        for (RequesterEntity requester : requesterRepository.findAll()) {
-            requesters.add(requesterMapper.toResponseDto(requester));
-        }
-
-        return requesters;
-    }
-
-    @Override
-    public RequesterResponseDto findById(Long id) {
-        Optional<RequesterEntity> requesterOptional =
-                requesterRepository.findById(id);
-
-        if (requesterOptional.isEmpty()) {
-            throw new RequesterNotFoundException(id);
-        }
-
-        return requesterMapper.toResponseDto(requesterOptional.get());
-    }
-
-    @Override
-    public RequesterResponseDto save(
-            RequesterRequestDto requesterRequestDto
-    ) {
-        RequesterEntity requester =
-                requesterMapper.toEntity(requesterRequestDto);
-
-        RequesterEntity savedRequester =
-                requesterRepository.save(requester);
-
-        return requesterMapper.toResponseDto(savedRequester);
-    }
-}*/

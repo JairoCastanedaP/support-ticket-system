@@ -1,12 +1,11 @@
 package com.co.support.it.support_ticket_system.business.ticket.entity;
 
-
-
 import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
 import com.co.support.it.support_ticket_system.business.requester.entity.RequesterEntity;
 import com.co.support.it.support_ticket_system.business.supportagent.entity.SupportAgentEntity;
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
+import com.co.support.it.support_ticket_system.generic.entity.GenericEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,9 +15,13 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tickets")
+@AttributeOverride(
+        name = "active",
+        column = @Column(name = "is_active", nullable = false)
+)
 @Getter
 @Setter
-public class TicketEntity {
+public class TicketEntity extends GenericEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,32 +57,13 @@ public class TicketEntity {
     @JoinColumn(name = "assigned_agent_id")
     private SupportAgentEntity assignedAgent;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean active = true;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     @PrePersist
     private void beforeInsert() {
-        LocalDateTime now = LocalDateTime.now();
-
         if (ticketNumber == null || ticketNumber.isBlank()) {
             ticketNumber = "TCK-" + UUID.randomUUID();
         }
-
-        createdAt = now;
-        updatedAt = now;
-    }
-
-    @PreUpdate
-    private void beforeUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

@@ -6,6 +6,8 @@ import com.co.support.it.support_ticket_system.business.category.entity.Category
 import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
 import com.co.support.it.support_ticket_system.business.category.mapper.CategoryMapper;
 import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
+import com.co.support.it.support_ticket_system.generic.exception.DuplicateException;
+import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
 import com.co.support.it.support_ticket_system.generic.service.GenericServiceImpl;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,8 @@ public class CategoryServiceImpl
         extends GenericServiceImpl<CategoryEntity, CategoryRequestDto, CategoryResponseDto, Long>
         implements CategoryService {
 
+    private final CategoryRepository categoryRepository;
+
     public CategoryServiceImpl(
             CategoryRepository categoryRepository,
             CategoryMapper categoryMapper
@@ -21,75 +25,27 @@ public class CategoryServiceImpl
         super(
                 categoryRepository,
                 categoryMapper::toEntity,
-                categoryMapper::toResponseDto
+                categoryMapper::toResponseDto,
+                categoryMapper::updateEntity
         );
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
-    protected RuntimeException createNotFoundException(Long id) {
+    protected NotFoundException createNotFoundException(Long id) {
         return new CategoryNotFoundException(id);
     }
+
+    @Override
+    protected void validateUniqueness(CategoryRequestDto request, Long currentId) {
+        boolean duplicated = currentId == null
+                ? categoryRepository.existsByNameIgnoreCase(request.name())
+                : categoryRepository.existsByNameIgnoreCaseAndIdNot(request.name(), currentId);
+
+        if (duplicated) {
+            throw new DuplicateException(
+                    "Ya existe un registro de categoría con el nombre: " + request.name()
+            );
+        }
+    }
 }
-/*
-package com.co.support.it.support_ticket_system.business.category.service;
-
-import com.co.support.it.support_ticket_system.business.category.dto.CategoryRequestDto;
-import com.co.support.it.support_ticket_system.business.category.dto.CategoryResponseDto;
-import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
-import com.co.support.it.support_ticket_system.business.category.exception.CategoryNotFoundException;
-import com.co.support.it.support_ticket_system.business.category.mapper.CategoryMapper;
-import com.co.support.it.support_ticket_system.business.category.repository.CategoryRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
-@Service
-public class CategoryServiceImpl implements CategoryService {
-
-    private final CategoryRepository categoryRepository;
-    private final CategoryMapper categoryMapper;
-
-    public CategoryServiceImpl(
-            CategoryRepository categoryRepository,
-            CategoryMapper categoryMapper
-    ) {
-        this.categoryRepository = categoryRepository;
-        this.categoryMapper = categoryMapper;
-    }
-
-    @Override
-    public List<CategoryResponseDto> findAll() {
-        List<CategoryResponseDto> categories = new ArrayList<>();
-
-        for (CategoryEntity category : categoryRepository.findAll()) {
-            categories.add(categoryMapper.toResponseDto(category));
-        }
-
-        return categories;
-    }
-
-    @Override
-    public CategoryResponseDto findById(Long id) {
-        Optional<CategoryEntity> categoryOptional =
-                categoryRepository.findById(id);
-
-        if (categoryOptional.isEmpty()) {
-            throw new CategoryNotFoundException(id);
-        }
-
-        return categoryMapper.toResponseDto(categoryOptional.get());
-    }
-
-    @Override
-    public CategoryResponseDto save(CategoryRequestDto categoryRequestDto) {
-        CategoryEntity category =
-                categoryMapper.toEntity(categoryRequestDto);
-
-        CategoryEntity savedCategory =
-                categoryRepository.save(category);
-
-        return categoryMapper.toResponseDto(savedCategory);
-    }
-}*/

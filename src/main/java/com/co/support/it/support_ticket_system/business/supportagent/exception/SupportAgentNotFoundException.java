@@ -1,6 +1,8 @@
 package com.co.support.it.support_ticket_system.business.supportagent.exception;
 
-public class SupportAgentNotFoundException extends RuntimeException {
+import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
+
+public class SupportAgentNotFoundException extends NotFoundException {
 
     public SupportAgentNotFoundException(Long id) {
         super("No se encontró el agente de soporte con id: " + id);

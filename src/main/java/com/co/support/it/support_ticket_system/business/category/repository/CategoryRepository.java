@@ -1,7 +1,11 @@
 package com.co.support.it.support_ticket_system.business.category.repository;
 
 import com.co.support.it.support_ticket_system.business.category.entity.CategoryEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.co.support.it.support_ticket_system.generic.repository.GenericRepository;
 
-public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> {
+public interface CategoryRepository extends GenericRepository<CategoryEntity, Long> {
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }
