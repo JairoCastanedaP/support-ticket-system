@@ -24,6 +24,10 @@ public interface TicketMapper extends GenericMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "resolutionNote", ignore = true)
+    @Mapping(target = "resolvedAt", ignore = true)
+    @Mapping(target = "closedAt", ignore = true)
     TicketEntity toEntity(TicketRequestDto ticketRequestDto);
 
     @Mapping(target = "requesterId", source = "requester.id")
@@ -52,6 +56,10 @@ public interface TicketMapper extends GenericMapper {
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "active", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "resolutionNote", ignore = true)
+    @Mapping(target = "resolvedAt", ignore = true)
+    @Mapping(target = "closedAt", ignore = true)
     void updateEntityFromDto(
             TicketRequestDto ticketRequestDto,
             @MappingTarget TicketEntity ticketEntity

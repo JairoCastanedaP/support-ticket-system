@@ -15,6 +15,7 @@ public final class APIEndPoints {
     public static final String TICKET_COMMENTS = TICKETS + "/{ticketId}/comments";
 
     public static final String BY_ID = "/{id}";
+    public static final String TICKET_STATUS = "/{id}/status";
     public static final String TICKET_STATUS_HISTORY = "/{id}/status-history";
 
     private APIEndPoints() {

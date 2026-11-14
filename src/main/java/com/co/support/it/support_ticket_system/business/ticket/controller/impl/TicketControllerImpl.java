@@ -5,6 +5,7 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPrio
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusChangeRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.service.TicketService;
 import com.co.support.it.support_ticket_system.generic.controller.GenericControllerImpl;
@@ -57,6 +58,12 @@ public class TicketControllerImpl extends GenericControllerImpl implements Ticke
     public ResponseEntity<CustomResponse<TicketResponseDto>> update(Long id, TicketRequestDto request) {
         log.info("Actualizando ticket con id: {}", id);
         return returnUpdated(ticketService.update(id, request));
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse<TicketResponseDto>> changeStatus(Long id, TicketStatusChangeRequestDto request) {
+        log.info("Cambiando estado del ticket {} a {}", id, request.status());
+        return returnUpdated(ticketService.changeStatus(id, request));
     }
 
     @Override

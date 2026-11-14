@@ -4,6 +4,7 @@ import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPrio
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusChangeRequestDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketStatusHistoryResponseDto;
 
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ public interface TicketService {
     TicketResponseDto findById(Long id);
     TicketResponseDto save(TicketRequestDto ticketRequestDto);
     TicketResponseDto update(Long id, TicketRequestDto ticketRequestDto);
+    TicketResponseDto changeStatus(Long id, TicketStatusChangeRequestDto request);
     void delete(Long id);
     List<TicketStatusHistoryResponseDto> findStatusHistory(Long ticketId);
 }

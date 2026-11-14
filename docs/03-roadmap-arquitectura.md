@@ -22,13 +22,13 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 | 04 | architecture/04-ticket-domain-model | Modelo relacional, relaciones JPA, filtros, paginación y borrado lógico |
 | 05 | architecture/05-feature-generic-architecture | Paquetes por funcionalidad y servicio genérico |
 | 06 | architecture/06-multiple-data-sources | MySQL + Oracle con pools separados, auditoría por bandeja de salida (outbox) con relay idempotente a Oracle, auditoría HTTP con correlation-id, Docker Compose y enums `TicketStatus`/`TicketPriority` |
+| 07 | architecture/07-rest-foundation | `CustomResponse` en toda la API, controllers con interfaz e implementación, CRUD genérico con borrado lógico, auditoría JPA con `X-User-Id` y excepciones centralizadas |
+| 08 | architecture/08-domain-business-rules | Ciclo de vida del ticket con transiciones y `PATCH` de estado, Strategy por estado destino, Chain of Responsibility para validar, número `TCK-año-consecutivo` y pruebas unitarias |
 
 ## 4. Etapas de la entrega final
 
 | N.º | Rama | Componentes de arquitectura |
 |---|---|---|
-| 07 | architecture/07-rest-foundation | Controller, servicio genérico, componentes comunes |
-| 08 | architecture/08-domain-business-rules | Dominio, lógica de negocio en servicios |
 | 09 | architecture/09-advanced-persistence | Base de datos, persistencia avanzada |
 | 10 | architecture/10-integrations | Servicios de integración, componentes especiales |
 | 11 | architecture/11-batch-ticket-history | Tercera base de datos, procesamiento batch |
@@ -47,11 +47,12 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 ### 08 — Dominio y reglas del ticket
 
 - Transiciones declaradas en `TicketStatus` (`canTransitionTo`) y endpoint `PATCH /tickets/{id}/status` con motivo o nota; transición inválida → 409.
-- Creación siempre en `OPEN`; se retira `status` del DTO de creación.
-- **Chain of Responsibility:** validadores de creación (solicitante existe, categoría activa, agente activo).
-- **Strategy:** cálculo de la fecha límite (SLA) por prioridad.
-- Número legible `TCK-2026-000123`.
-- Pruebas automáticas de las transiciones.
+- Creación siempre en `OPEN`; se retira `status` del DTO, así que `PUT` ya no cambia el estado. Un ticket `CLOSED` no se edita (409).
+- **Strategy:** una estrategia por estado destino con sus reglas y efectos: `IN_PROGRESS` exige agente asignado (409); `RESOLVED` exige nota (400) y guarda `resolutionNote` y `resolvedAt`; `CLOSED` exige motivo si no estaba resuelto (400) y guarda `closedAt`. Un resolver las indexa por estado.
+- **Chain of Responsibility:** solicitante → categoría → agente; cada eslabón valida existencia (404) y estado activo (409) en la creación y la edición.
+- Historial con `reason` y `changedBy`; evento de auditoría `TICKET_STATUS_CHANGED` por el outbox.
+- Número legible `TCK-2026-000123`, asignado con el id después del INSERT. Los tickets anteriores conservan su número.
+- Pruebas unitarias (JUnit 5 + Mockito): las 25 combinaciones de transiciones, las estrategias y la cadena.
 - **Pruebas Postman:** camino feliz OPEN → IN_PROGRESS → RESOLVED → CLOSED, transición inválida → 409, RESOLVED sin nota → 400, categoría inactiva → 409, historial del ticket.
 
 ### 09 — Persistencia avanzada
@@ -94,9 +95,9 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 |---|---|---|
 | Base de datos | 6 tablas relacionadas en MySQL + scripts SQL | 04, 09 |
 | Persistencia | JPQL, SQL nativo, Projection, vista (VO), procedimiento almacenado; MySQL + Oracle + PostgreSQL | 06, 09, 11 |
-| Dominio | Transiciones en `TicketStatus`, Chain of Responsibility, Strategy (SLA) | 08 |
+| Dominio | Transiciones en `TicketStatus`, Chain of Responsibility (validación), Strategy (reglas por estado destino) | 08 |
 | Servicio genérico | `GenericService` parametrizado con interfaces funcionales; servicios especializados (SRP) | 05, 07 |
-| Lógica de servicios | Validaciones, cálculo del SLA, mappers, outbox hacia Oracle, servicios externos | 08, 10 |
+| Lógica de servicios | Validaciones, reglas del ciclo de vida, mappers, outbox hacia Oracle, servicios externos | 08, 10 |
 | Integración | Activos con token, directorio interno, portal con API key, Quartz + correo, Spring Batch | 10, 11 |
 | Controller | Interfaces + herencia, `APIEndPoints`, `/api/v1`, `@RestControllerAdvice`, `CustomResponse` | 07 |
 | Componentes especiales | `@ValidPhone`, `@ValidTicketNumber`, utilitarios, interceptores de auditoría y API key | 06, 07, 10 |

@@ -9,6 +9,8 @@ public record TicketStatusHistoryResponseDto(
         Long ticketId,
         TicketStatus previousStatus,
         TicketStatus newStatus,
+        String reason,
+        String changedBy,
         LocalDateTime changedAt
 ) {
 }

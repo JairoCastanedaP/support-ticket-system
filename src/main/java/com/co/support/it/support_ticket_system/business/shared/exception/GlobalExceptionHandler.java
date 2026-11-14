@@ -1,6 +1,7 @@
 package com.co.support.it.support_ticket_system.business.shared.exception;
 
 import com.co.support.it.support_ticket_system.generic.controller.response.CustomResponse;
+import com.co.support.it.support_ticket_system.generic.exception.BadRequestException;
 import com.co.support.it.support_ticket_system.generic.exception.BusinessRuleException;
 import com.co.support.it.support_ticket_system.generic.exception.DuplicateException;
 import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
@@ -85,6 +86,14 @@ public class GlobalExceptionHandler {
         }
 
         return build(HttpStatus.BAD_REQUEST, INVALID_BODY_MESSAGE, null);
+    }
+
+    /**
+     * Falta un dato que la operación exige según el contexto, por ejemplo la nota al resolver un ticket.
+     */
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<CustomResponse<Void>> handleBadRequest(BadRequestException exception) {
+        return build(HttpStatus.BAD_REQUEST, exception.getMessage(), null);
     }
 
     @ExceptionHandler({NotFoundException.class, NoResourceFoundException.class})

@@ -1,12 +1,15 @@
 package com.co.support.it.support_ticket_system.business.ticket.dto;
 
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
-import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Datos editables de un ticket. El estado no se recibe aquí: el ticket nace en OPEN
+ * y cambia de estado únicamente con PATCH /tickets/{id}/status.
+ */
 public record TicketRequestDto (
 
         @NotBlank(message = "El titulo es obligatorio")
@@ -29,9 +32,6 @@ public record TicketRequestDto (
         Long supportAgentId,
 
         @NotNull(message = "La prioridad es obligatoria")
-        TicketPriority priority,
-
-        @NotNull(message = "El estado es obligatorio")
-        TicketStatus status
+        TicketPriority priority
 ){
 }

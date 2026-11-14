@@ -57,13 +57,34 @@ public class TicketEntity extends GenericEntity {
     @JoinColumn(name = "assigned_agent_id")
     private SupportAgentEntity assignedAgent;
 
+    @Column(name = "resolution_note", length = 1000)
+    private String resolutionNote;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * El número legible depende del id, que solo existe después del INSERT.
+     * Mientras tanto se guarda un valor temporal único que {@link #assignTicketNumber()} reemplaza.
+     */
     @PrePersist
     private void beforeInsert() {
         if (ticketNumber == null || ticketNumber.isBlank()) {
-            ticketNumber = "TCK-" + UUID.randomUUID();
+            ticketNumber = "TMP-" + UUID.randomUUID();
         }
+    }
+
+    /**
+     * Asigna el número legible con el formato TCK-año-consecutivo, por ejemplo TCK-2026-000123.
+     */
+    public void assignTicketNumber() {
+        int year = getCreatedAt() != null ? getCreatedAt().getYear() : LocalDateTime.now().getYear();
+        ticketNumber = String.format("TCK-%d-%06d", year, id);
     }
 }
