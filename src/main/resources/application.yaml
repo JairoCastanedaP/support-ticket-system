@@ -40,3 +40,22 @@ app:
   persistence:
     # H2 no ejecuta el procedimiento de MySQL; los indicadores solo se habilitan en el perfil docker.
     stored-procedures-enabled: false
+  # Servicios externos (etapa 10). Las credenciales llegan por variables de entorno.
+  integrations:
+    connect-timeout: 3s
+    read-timeout: 5s
+    assets:
+      base-url: https://api.escuelajs.co/api/v1
+      email: ${ASSETS_API_EMAIL:}
+      password: ${ASSETS_API_PASSWORD:}
+    directory:
+      base-url: https://jsonplaceholder.typicode.com
+  portal:
+    api-key: ${PORTAL_API_KEY:}
+  # Correos al resolver un ticket. En local quedan pendientes; el perfil docker los envía a Mailpit.
+  notifications:
+    enabled: false
+    admin-email: ${TICKET_ADMIN_EMAIL:}
+    from: ${MAIL_FROM:no-reply@support-ticket.local}
+    interval-seconds: 30
+    max-attempts: 3

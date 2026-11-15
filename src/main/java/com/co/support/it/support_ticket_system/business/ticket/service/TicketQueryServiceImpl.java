@@ -17,6 +17,11 @@ import com.co.support.it.support_ticket_system.business.ticket.repository.Ticket
 import com.co.support.it.support_ticket_system.business.ticket.repository.TicketSummaryViewRepository;
 import com.co.support.it.support_ticket_system.generic.exception.BadRequestException;
 import com.co.support.it.support_ticket_system.generic.exception.FeatureNotAvailableException;
+import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
+import com.co.support.it.support_ticket_system.integration.asset.AssetCatalogClient;
+import com.co.support.it.support_ticket_system.integration.asset.AssetNotFoundException;
+import com.co.support.it.support_ticket_system.integration.asset.AssetResponseDto;
+import com.co.support.it.support_ticket_system.business.ticket.entity.TicketEntity;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +45,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     private final TicketIndicatorsRepository indicatorsRepository;
     private final TicketMapper ticketMapper;
     private final TicketQueryMapper queryMapper;
+    private final AssetCatalogClient assetCatalogClient;
     private final boolean storedProceduresEnabled;
 
     public TicketQueryServiceImpl(
@@ -48,6 +54,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
             TicketIndicatorsRepository indicatorsRepository,
             TicketMapper ticketMapper,
             TicketQueryMapper queryMapper,
+            AssetCatalogClient assetCatalogClient,
             @Value("${app.persistence.stored-procedures-enabled:false}") boolean storedProceduresEnabled
     ) {
         this.ticketRepository = ticketRepository;
@@ -55,6 +62,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         this.indicatorsRepository = indicatorsRepository;
         this.ticketMapper = ticketMapper;
         this.queryMapper = queryMapper;
+        this.assetCatalogClient = assetCatalogClient;
         this.storedProceduresEnabled = storedProceduresEnabled;
     }
 
@@ -122,5 +130,18 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         long total = byStatus.values().stream().mapToLong(Long::longValue).sum();
 
         return new TicketIndicatorsResponseDto(total, byStatus, byCategory, result.averageResolutionHours());
+    }
+
+    @Override
+    public AssetResponseDto findAsset(Long ticketId) {
+        TicketEntity ticket = ticketRepository.findByIdAndActiveTrueAndDeletedAtIsNull(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException(ticketId));
+
+        if (ticket.getAssetId() == null) {
+            throw new NotFoundException("El ticket " + ticket.getTicketNumber() + " no tiene un activo de TI asociado");
+        }
+
+        return assetCatalogClient.findById(ticket.getAssetId())
+                .orElseThrow(() -> new AssetNotFoundException(ticket.getAssetId()));
     }
 }

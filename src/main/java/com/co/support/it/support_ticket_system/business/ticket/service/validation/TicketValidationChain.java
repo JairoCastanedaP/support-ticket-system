@@ -4,7 +4,8 @@ import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequest
 import org.springframework.stereotype.Component;
 
 /**
- * Arma la cadena en orden: solicitante → categoría → agente.
+ * Arma la cadena en orden: solicitante → categoría → agente → activo de TI.
+ * Las validaciones locales van primero para no consultar el servicio externo si ya hay un error.
  */
 @Component
 public class TicketValidationChain {
@@ -14,9 +15,10 @@ public class TicketValidationChain {
     public TicketValidationChain(
             RequesterValidationHandler requesterHandler,
             CategoryValidationHandler categoryHandler,
-            SupportAgentValidationHandler supportAgentHandler
+            SupportAgentValidationHandler supportAgentHandler,
+            AssetValidationHandler assetHandler
     ) {
-        requesterHandler.linkWith(categoryHandler).linkWith(supportAgentHandler);
+        requesterHandler.linkWith(categoryHandler).linkWith(supportAgentHandler).linkWith(assetHandler);
         this.first = requesterHandler;
     }
 

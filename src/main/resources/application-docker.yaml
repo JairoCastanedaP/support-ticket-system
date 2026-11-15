@@ -17,6 +17,10 @@ spring:
   h2:
     console:
       enabled: false
+
+  mail:
+    host: ${MAIL_HOST:mailpit}
+    port: ${MAIL_PORT:1025}
 app:
   datasource:
     oracle:
@@ -29,3 +33,5 @@ app:
         minimum-idle: 1
   persistence:
     stored-procedures-enabled: true
+  notifications:
+    enabled: true

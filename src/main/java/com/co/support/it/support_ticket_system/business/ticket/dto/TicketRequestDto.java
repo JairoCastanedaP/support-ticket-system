@@ -32,6 +32,9 @@ public record TicketRequestDto (
         Long supportAgentId,
 
         @NotNull(message = "La prioridad es obligatoria")
-        TicketPriority priority
+        TicketPriority priority,
+
+        @Positive(message = "El identificador del activo debe ser positivo")
+        Long assetId
 ){
 }

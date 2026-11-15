@@ -50,6 +50,8 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: docker
       MYSQL_HOST: mysql
@@ -60,8 +62,22 @@ services:
       ORACLE_AUDIT_URL: jdbc:oracle:thin:@//oracle:1521/FREEPDB1
       ORACLE_AUDIT_USERNAME: ${ORACLE_AUDIT_USERNAME}
       ORACLE_AUDIT_PASSWORD: ${ORACLE_AUDIT_PASSWORD}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      TICKET_ADMIN_EMAIL: ${TICKET_ADMIN_EMAIL}
+      PORTAL_API_KEY: ${PORTAL_API_KEY}
+      ASSETS_API_EMAIL: ${ASSETS_API_EMAIL}
+      ASSETS_API_PASSWORD: ${ASSETS_API_PASSWORD}
     ports:
       - "127.0.0.1:8081:8080"
+
+  # Servidor de correo de pruebas: recibe por SMTP (1025) y muestra los correos en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
 
 volumes:
   mysql_data:

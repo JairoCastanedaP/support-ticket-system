@@ -11,6 +11,7 @@ import com.co.support.it.support_ticket_system.business.ticket.service.TicketQue
 import com.co.support.it.support_ticket_system.generic.controller.GenericControllerImpl;
 import com.co.support.it.support_ticket_system.generic.controller.response.CustomResponse;
 import com.co.support.it.support_ticket_system.generic.controller.response.PageResponse;
+import com.co.support.it.support_ticket_system.integration.asset.AssetResponseDto;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,5 +50,10 @@ public class TicketQueryControllerImpl extends GenericControllerImpl implements 
     @Override
     public ResponseEntity<CustomResponse<TicketIndicatorsResponseDto>> getIndicators() {
         return returnOk(ticketQueryService.getIndicators());
+    }
+
+    @Override
+    public ResponseEntity<CustomResponse<AssetResponseDto>> findAsset(Long id) {
+        return returnOk(ticketQueryService.findAsset(id));
     }
 }

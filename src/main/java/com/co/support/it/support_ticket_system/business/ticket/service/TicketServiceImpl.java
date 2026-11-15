@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.business.ticket.service;
 
+import com.co.support.it.support_ticket_system.business.notification.service.TicketNotificationService;
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketStatus;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
@@ -44,6 +45,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketValidationChain validationChain;
     private final TicketStatusChangeStrategyResolver statusStrategyResolver;
     private final AuditOutboxRepository auditOutboxRepository;
+    private final TicketNotificationService notificationService;
     private final JsonMapper jsonMapper;
 
     public TicketServiceImpl(
@@ -54,6 +56,7 @@ public class TicketServiceImpl implements TicketService {
             TicketValidationChain validationChain,
             TicketStatusChangeStrategyResolver statusStrategyResolver,
             AuditOutboxRepository auditOutboxRepository,
+            TicketNotificationService notificationService,
             JsonMapper jsonMapper
     ) {
         this.ticketRepository = ticketRepository;
@@ -63,6 +66,7 @@ public class TicketServiceImpl implements TicketService {
         this.validationChain = validationChain;
         this.statusStrategyResolver = statusStrategyResolver;
         this.auditOutboxRepository = auditOutboxRepository;
+        this.notificationService = notificationService;
         this.jsonMapper = jsonMapper;
     }
 
@@ -162,7 +166,8 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Cambia el estado: valida la transición, aplica la estrategia del estado destino,
-     * registra el historial y deja el evento en el outbox de auditoría.
+     * registra el historial, deja el evento en el outbox de auditoría y,
+     * si el ticket queda resuelto, el correo pendiente para el administrador.
      */
     @Override
     @Transactional
@@ -189,6 +194,10 @@ public class TicketServiceImpl implements TicketService {
         ticketStatusHistoryRepository.save(history);
 
         TicketEntity updatedTicket = ticketRepository.saveAndFlush(ticket);
+
+        if (newStatus == TicketStatus.RESOLVED) {
+            notificationService.registerTicketResolved(updatedTicket, updatedTicket.getUpdatedBy());
+        }
 
         registerEvent("TICKET_STATUS_CHANGED", updatedTicket, new TicketStatusChangedPayload(
                 updatedTicket.getId(),

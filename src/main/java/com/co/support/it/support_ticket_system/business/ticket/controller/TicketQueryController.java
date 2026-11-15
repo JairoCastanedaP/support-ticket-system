@@ -8,6 +8,7 @@ import com.co.support.it.support_ticket_system.business.ticket.dto.TicketSearchR
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketSummaryResponseDto;
 import com.co.support.it.support_ticket_system.generic.controller.response.CustomResponse;
 import com.co.support.it.support_ticket_system.generic.controller.response.PageResponse;
+import com.co.support.it.support_ticket_system.integration.asset.AssetResponseDto;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -42,4 +43,10 @@ public interface TicketQueryController {
 
     @GetMapping(TICKET_INDICATORS)
     ResponseEntity<CustomResponse<TicketIndicatorsResponseDto>> getIndicators();
+
+    /**
+     * Detalle del activo de TI del ticket, consultado en el catálogo externo.
+     */
+    @GetMapping(TICKET_ASSET)
+    ResponseEntity<CustomResponse<AssetResponseDto>> findAsset(@PathVariable("id") Long id);
 }

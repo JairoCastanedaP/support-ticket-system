@@ -57,6 +57,10 @@ public class TicketEntity extends GenericEntity {
     @JoinColumn(name = "assigned_agent_id")
     private SupportAgentEntity assignedAgent;
 
+    /** Activo de TI afectado, identificado en el catálogo externo. */
+    @Column(name = "asset_id")
+    private Long assetId;
+
     @Column(name = "resolution_note", length = 1000)
     private String resolutionNote;
 

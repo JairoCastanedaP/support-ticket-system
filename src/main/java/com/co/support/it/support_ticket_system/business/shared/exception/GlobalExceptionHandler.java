@@ -4,6 +4,7 @@ import com.co.support.it.support_ticket_system.generic.controller.response.Custo
 import com.co.support.it.support_ticket_system.generic.exception.BadRequestException;
 import com.co.support.it.support_ticket_system.generic.exception.BusinessRuleException;
 import com.co.support.it.support_ticket_system.generic.exception.DuplicateException;
+import com.co.support.it.support_ticket_system.generic.exception.ExternalServiceException;
 import com.co.support.it.support_ticket_system.generic.exception.FeatureNotAvailableException;
 import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import tools.jackson.databind.exc.InvalidFormatException;
@@ -57,6 +59,20 @@ public class GlobalExceptionHandler {
                 : "El valor '" + exception.getValue() + "' no tiene un formato válido";
 
         return build(HttpStatus.BAD_REQUEST, VALIDATION_MESSAGE, Map.of(exception.getName(), detail));
+    }
+
+    /**
+     * Restricción incumplida en un parámetro de la URL, por ejemplo un número de ticket con formato inválido.
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<CustomResponse<Map<String, String>>> handleMethodValidation(
+            HandlerMethodValidationException exception
+    ) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        exception.getParameterValidationResults().forEach(result -> result.getResolvableErrors().forEach(error ->
+                errors.putIfAbsent(result.getMethodParameter().getParameterName(), error.getDefaultMessage())));
+
+        return build(HttpStatus.BAD_REQUEST, VALIDATION_MESSAGE, errors);
     }
 
     /**
@@ -117,6 +133,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({DuplicateException.class, BusinessRuleException.class})
     public ResponseEntity<CustomResponse<Void>> handleConflict(RuntimeException exception) {
         return build(HttpStatus.CONFLICT, exception.getMessage(), null);
+    }
+
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<CustomResponse<Void>> handleExternalService(ExternalServiceException exception) {
+        log.warn("Servicio externo no disponible: {}", exception.getMessage(), exception.getCause());
+        return build(HttpStatus.SERVICE_UNAVAILABLE, exception.getMessage(), null);
     }
 
     @ExceptionHandler(FeatureNotAvailableException.class)
