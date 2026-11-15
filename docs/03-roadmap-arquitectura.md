@@ -24,12 +24,12 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 | 06 | architecture/06-multiple-data-sources | MySQL + Oracle con pools separados, auditoría por bandeja de salida (outbox) con relay idempotente a Oracle, auditoría HTTP con correlation-id, Docker Compose y enums `TicketStatus`/`TicketPriority` |
 | 07 | architecture/07-rest-foundation | `CustomResponse` en toda la API, controllers con interfaz e implementación, CRUD genérico con borrado lógico, auditoría JPA con `X-User-Id` y excepciones centralizadas |
 | 08 | architecture/08-domain-business-rules | Ciclo de vida del ticket con transiciones y `PATCH` de estado, Strategy por estado destino, Chain of Responsibility para validar, número `TCK-año-consecutivo` y pruebas unitarias |
+| 09 | architecture/09-advanced-persistence | JPQL, SQL nativo con Projection, vista `vw_ticket_summary` como VO de solo lectura, procedimiento `usp_ticket_indicators` y scripts SQL con datos iniciales |
 
 ## 4. Etapas de la entrega final
 
 | N.º | Rama | Componentes de arquitectura |
 |---|---|---|
-| 09 | architecture/09-advanced-persistence | Base de datos, persistencia avanzada |
 | 10 | architecture/10-integrations | Servicios de integración, componentes especiales |
 | 11 | architecture/11-batch-ticket-history | Tercera base de datos, procesamiento batch |
 | 12 | architecture/12-documentation-demo | Documentación y demostración |
@@ -57,12 +57,20 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 
 ### 09 — Persistencia avanzada
 
-- Consultas JPQL y SQL nativo en los repositorios.
-- Projection para el listado resumido de tickets.
-- Vista `vw_ticket_summary` mapeada como entidad de solo lectura (VO).
-- Procedimiento `usp_ticket_indicators` y endpoint `GET /tickets/indicators` (RF-10).
-- Scripts SQL versionados (procedimiento, vista y datos iniciales).
-- **Pruebas Postman:** listado resumido, búsqueda por número, indicadores.
+Cada técnica atiende una consulta distinta, todas de solo lectura en `TicketQueryService` y `TicketQueryController`:
+
+| Técnica | Uso | Endpoint |
+|---|---|---|
+| JPQL con `join fetch` | Ticket por número legible con categoría, solicitante y agente en una sola consulta | `GET /tickets/number/{ticketNumber}` |
+| SQL nativo + Projection | Búsqueda por texto en título y descripción; devuelve solo id, número, título, estado y prioridad (máximo 50) | `GET /tickets/search?text=` |
+| Vista `vw_ticket_summary` (VO) | Listado resumido paginado con columnas calculadas por la base: nombres completos, cantidad de comentarios y horas abierto. Entidad `@Immutable` mapeada con `@Subselect` para que Hibernate no cree una tabla con ese nombre | `GET /tickets/summary` |
+| Procedimiento `usp_ticket_indicators` | Cantidad por estado y por categoría (una fila por dimensión) y horas promedio de resolución (parámetro de salida). Declarado `READS SQL DATA` (RF-10) | `GET /tickets/indicators` |
+
+- **Scripts SQL** en `src/main/resources/db/`: `mysql/schema.sql` (vista y procedimiento), `h2/schema.sql` (vista) y `data.sql` (3 categorías, 2 agentes y 2 solicitantes). Se ejecutan en cada arranque después de que Hibernate cree las tablas (`defer-datasource-initialization`), con separador `$$`, y se pueden repetir sin duplicar datos.
+- **Perfil local (H2):** la vista, las búsquedas y los datos iniciales funcionan; los indicadores responden `501 Not Implemented` porque H2 no ejecuta procedimientos de MySQL (`app.persistence.stored-procedures-enabled`).
+- Un parámetro obligatorio ausente en la URL responde `400`.
+- Pruebas unitarias del servicio de consultas: armado de indicadores, perfil sin procedimientos, validación del texto y número inexistente.
+- **Pruebas Postman:** búsqueda por número (también en minúsculas) e inexistente → 404, búsqueda por texto con la forma de la proyección, texto corto o ausente → 400, listado resumido filtrado con columnas calculadas, indicadores.
 
 ### 10 — Integraciones
 

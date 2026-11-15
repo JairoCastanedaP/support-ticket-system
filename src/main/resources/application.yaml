@@ -12,6 +12,16 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    # Los scripts SQL se ejecutan después de que Hibernate cree las tablas.
+    defer-datasource-initialization: true
+
+  # Vista, procedimiento y datos iniciales (src/main/resources/db).
+  sql:
+    init:
+      mode: always
+      separator: "$$"
+      schema-locations: classpath:db/h2/schema.sql
+      data-locations: classpath:db/data.sql
 
   h2:
     console:
@@ -27,3 +37,6 @@ app:
       username: sa
       password:
       driver-class-name: org.h2.Driver
+  persistence:
+    # H2 no ejecuta el procedimiento de MySQL; los indicadores solo se habilitan en el perfil docker.
+    stored-procedures-enabled: false
