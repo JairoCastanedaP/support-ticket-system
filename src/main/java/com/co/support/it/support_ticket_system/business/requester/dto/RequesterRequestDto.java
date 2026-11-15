@@ -1,5 +1,6 @@
 package com.co.support.it.support_ticket_system.business.requester.dto;
 
+import com.co.support.it.support_ticket_system.business.shared.validation.ValidPhone;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,6 +21,7 @@ public record RequesterRequestDto(
         String email,
 
         @Size(max = 30, message = "El celular no debe superar los 30 caracteres")
+        @ValidPhone
         String phoneNumber
 ) {
 }

@@ -275,7 +275,7 @@ El primer incremento funcional estará listo cuando:
 | B4 | Esquema | Scripts SQL para procedimiento, vista y datos iniciales; las tablas siguen gestionadas por Hibernate (`update`). En el perfil local (H2) los indicadores no están disponibles (501) |
 | B5 | Tercera base | PostgreSQL como histórico de tickets, alimentado por Spring Batch |
 | C1 | Integración externa con token | Saliente: catálogo de activos de TI en escuelajs (login + Bearer). Entrante: portal de clientes externos protegido con `X-API-Key` |
-| C2 | Integración interna sin seguridad | Directorio de empleados (jsonplaceholder `users`) para completar datos del solicitante |
+| C2 | Integración interna sin seguridad | Directorio de empleados (jsonplaceholder `users`): alta de un solicitante a partir de un empleado |
 | C3 | Correo | Al pasar a `RESOLVED`: notificación pendiente en la misma transacción y envío a `TICKET_ADMIN_EMAIL`; Mailpit en Docker para la demo |
 | C4 | Jobs | Quartz para el envío de correos; el relay de auditoría sigue con `@Scheduled` |
 | C5 | Mensajería | Notificaciones por correo desacopladas mediante tabla de pendientes y job |
@@ -283,7 +283,7 @@ El primer incremento funcional estará listo cuando:
 | D1 | Respuesta estándar | `CustomResponse` en todos los endpoints |
 | D2 | Controllers | `GenericController` + implementación para Category, Requester y SupportAgent (CRUD con borrado lógico); Ticket con controller propio que hereda la clase base |
 | D3 | Documentación | Swagger para toda la API; REST Docs para los endpoints de Ticket |
-| D4 | Anotaciones propias | `@ValidPhone` (formato colombiano) y `@ValidTicketNumber` |
+| D4 | Anotaciones propias | `@ValidPhone` (7 a 15 dígitos, puede iniciar con +) y `@ValidTicketNumber` (`TCK-AAAA-NNNNNN`) |
 | E1 | Ramas | Una rama por fase → `develop` → `main` con tag `mvp-final` |
 | E2 | Despliegue | Docker Compose |
 | E3 | Diagramas | Mermaid en el README |

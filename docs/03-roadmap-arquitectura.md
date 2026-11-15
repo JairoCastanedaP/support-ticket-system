@@ -25,12 +25,12 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 | 07 | architecture/07-rest-foundation | `CustomResponse` en toda la API, controllers con interfaz e implementación, CRUD genérico con borrado lógico, auditoría JPA con `X-User-Id` y excepciones centralizadas |
 | 08 | architecture/08-domain-business-rules | Ciclo de vida del ticket con transiciones y `PATCH` de estado, Strategy por estado destino, Chain of Responsibility para validar, número `TCK-año-consecutivo` y pruebas unitarias |
 | 09 | architecture/09-advanced-persistence | JPQL, SQL nativo con Projection, vista `vw_ticket_summary` como VO de solo lectura, procedimiento `usp_ticket_indicators` y scripts SQL con datos iniciales |
+| 10 | architecture/10-integrations | Catálogo de activos con token Bearer, directorio interno de empleados, portal con API key, correo con Quartz y Mailpit, validadores `@ValidPhone` y `@ValidTicketNumber` |
 
 ## 4. Etapas de la entrega final
 
 | N.º | Rama | Componentes de arquitectura |
 |---|---|---|
-| 10 | architecture/10-integrations | Servicios de integración, componentes especiales |
 | 11 | architecture/11-batch-ticket-history | Tercera base de datos, procesamiento batch |
 | 12 | architecture/12-documentation-demo | Documentación y demostración |
 
@@ -74,12 +74,23 @@ Cada técnica atiende una consulta distinta, todas de solo lectura en `TicketQue
 
 ### 10 — Integraciones
 
-- **Saliente con token:** cliente del catálogo de activos de TI (login → Bearer en el header); `assetId` opcional en el ticket; timeouts y errores HTTP controlados.
-- **Interna sin seguridad:** directorio de empleados para completar datos del solicitante.
-- **Entrante con API key:** `GET /api/v1/portal/tickets/{ticketNumber}` validado con `X-API-Key` por un interceptor; respuesta reducida.
-- **Correo con Quartz:** notificación pendiente al pasar a `RESOLVED` y job que la envía a `TICKET_ADMIN_EMAIL`; Mailpit en Docker Compose.
-- Anotaciones propias `@ValidPhone` y `@ValidTicketNumber`; utilitarios (`IpUtils`, `JpqlUtils`).
-- **Pruebas Postman:** activo de un ticket, portal con API key válida / inválida (401) / sin header, correo visible en Mailpit tras resolver.
+| Integración | Seguridad | Endpoint o disparador |
+|---|---|---|
+| Catálogo de activos de TI (escuelajs), saliente | Login y token `Bearer` en memoria; si el token es rechazado (401) se renueva y se reintenta una vez | `assetId` opcional en el ticket; `GET /tickets/{id}/asset` |
+| Directorio de empleados (jsonplaceholder), interna | Sin seguridad | `POST /requesters/from-directory/{employeeId}` |
+| Portal de clientes externos, entrante | Header `X-API-Key` validado por `PortalApiKeyInterceptor` (comparación en tiempo constante) | `GET /api/v1/portal/tickets/{ticketNumber}` |
+| Correo al administrador (SMTP) | — | Cambio a `RESOLVED` |
+
+- **Clientes HTTP:** un `RestClient` por servicio, con timeouts de 3 s (conexión) y 5 s (lectura). Si el servicio no responde o falla, la API responde `503` con `CustomResponse`.
+- **Activo en la cadena de validación:** nuevo eslabón `AssetValidationHandler` al final (solicitante → categoría → agente → activo). Activo inexistente → `404`; las validaciones locales van primero para no llamar al servicio externo si ya hay un error.
+- **Directorio:** separa nombre y apellido (sin títulos como "Mrs.") y deja el teléfono solo con dígitos; reutiliza el servicio de solicitantes, así un correo repetido responde `409`.
+- **Portal:** respuesta reducida (número, título, estado, categoría, fechas y nota de resolución), sin datos personales, agente ni auditoría. Sin header o con clave incorrecta → `401`.
+- **Correo con Quartz:** al resolver, `TicketNotificationService` guarda el correo en `ticket_notifications` dentro de la misma transacción. `TicketNotificationJob` (Quartz, cada 30 s, sin ejecuciones simultáneas) envía los pendientes a `TICKET_ADMIN_EMAIL`, cada uno en su propia transacción; tras 3 intentos fallidos queda en `FAILED`. Quartz usa almacenamiento en memoria porque el estado vive en la tabla. Solo se activa en el perfil docker; en local los correos quedan pendientes.
+- **Mailpit** en Docker Compose: recibe por SMTP (1025) y muestra los correos en `http://localhost:8025`.
+- **Validadores propios:** `@ValidPhone` (opcional; 7 a 15 dígitos, puede iniciar con +) en solicitantes y agentes, y `@ValidTicketNumber` (`TCK-AAAA-NNNNNN`) en el portal; un formato inválido responde `400` sin consultar la base.
+- **Variables de entorno nuevas** (`.env`, ver `.env.example`): `TICKET_ADMIN_EMAIL`, `PORTAL_API_KEY`, `ASSETS_API_EMAIL`, `ASSETS_API_PASSWORD`.
+- Pruebas unitarias: validadores, interceptor de API key, envío de correos con reintentos, normalización del directorio y eslabón del activo.
+- **Pruebas Postman:** teléfono inválido → 400, alta desde el directorio (repetida → 409, inexistente → 404), ticket con activo real y con activo inexistente → 404, detalle del activo, portal sin header / clave incorrecta → 401, número inválido → 400, inexistente → 404, consulta reducida, y correo visible en Mailpit tras resolver. La variable `portalApiKey` de la colección se completa con la clave del `.env`.
 
 ### 11 — Volcado histórico con Spring Batch
 
@@ -108,6 +119,6 @@ Cada técnica atiende una consulta distinta, todas de solo lectura en `TicketQue
 | Lógica de servicios | Validaciones, reglas del ciclo de vida, mappers, outbox hacia Oracle, servicios externos | 08, 10 |
 | Integración | Activos con token, directorio interno, portal con API key, Quartz + correo, Spring Batch | 10, 11 |
 | Controller | Interfaces + herencia, `APIEndPoints`, `/api/v1`, `@RestControllerAdvice`, `CustomResponse` | 07 |
-| Componentes especiales | `@ValidPhone`, `@ValidTicketNumber`, utilitarios, interceptores de auditoría y API key | 06, 07, 10 |
+| Componentes especiales | `@ValidPhone`, `@ValidTicketNumber`, interceptores de auditoría y API key | 06, 07, 10 |
 | Documentación | Swagger, REST Docs, Postman por etapa | 12 |
 | Valor agregado | Outbox idempotente, auditoría HTTP con correlation-id, Docker Compose con 3 bases + Mailpit | 06, 11, 12 |

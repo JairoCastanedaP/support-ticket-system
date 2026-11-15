@@ -41,6 +41,7 @@ class TicketQueryServiceImplTest {
                 indicatorsRepository,
                 mock(TicketMapper.class),
                 mock(TicketQueryMapper.class),
+                mock(com.co.support.it.support_ticket_system.integration.asset.AssetCatalogClient.class),
                 storedProceduresEnabled
         );
     }

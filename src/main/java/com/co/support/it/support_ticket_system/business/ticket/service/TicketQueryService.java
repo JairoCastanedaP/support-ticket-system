@@ -6,6 +6,7 @@ import com.co.support.it.support_ticket_system.business.ticket.dto.TicketIndicat
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketResponseDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketSearchResultDto;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketSummaryResponseDto;
+import com.co.support.it.support_ticket_system.integration.asset.AssetResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,4 +24,6 @@ public interface TicketQueryService {
     Page<TicketSummaryResponseDto> findSummary(TicketStatus status, TicketPriority priority, Pageable pageable);
 
     TicketIndicatorsResponseDto getIndicators();
+
+    AssetResponseDto findAsset(Long ticketId);
 }

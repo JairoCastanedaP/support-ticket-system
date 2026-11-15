@@ -22,6 +22,7 @@ public record TicketResponseDto(
         Long supportAgentId,
         String supportAgentName,
         String supportAgentSurname,
+        Long assetId,
         TicketPriority priority,
         TicketStatus status,
         String resolutionNote,

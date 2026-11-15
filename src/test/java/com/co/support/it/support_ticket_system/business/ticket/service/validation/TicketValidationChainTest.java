@@ -10,6 +10,7 @@ import com.co.support.it.support_ticket_system.business.supportagent.repository.
 import com.co.support.it.support_ticket_system.business.ticket.domain.TicketPriority;
 import com.co.support.it.support_ticket_system.business.ticket.dto.TicketRequestDto;
 import com.co.support.it.support_ticket_system.generic.exception.BusinessRuleException;
+import com.co.support.it.support_ticket_system.integration.asset.AssetCatalogClient;
 import com.co.support.it.support_ticket_system.generic.entity.GenericEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ class TicketValidationChainTest {
     private RequesterRepository requesterRepository;
     private CategoryRepository categoryRepository;
     private SupportAgentRepository supportAgentRepository;
+    private AssetCatalogClient assetCatalogClient;
     private TicketValidationChain chain;
 
     @BeforeEach
@@ -33,16 +35,18 @@ class TicketValidationChainTest {
         requesterRepository = mock(RequesterRepository.class);
         categoryRepository = mock(CategoryRepository.class);
         supportAgentRepository = mock(SupportAgentRepository.class);
+        assetCatalogClient = mock(AssetCatalogClient.class);
 
         chain = new TicketValidationChain(
                 new RequesterValidationHandler(requesterRepository),
                 new CategoryValidationHandler(categoryRepository),
-                new SupportAgentValidationHandler(supportAgentRepository)
+                new SupportAgentValidationHandler(supportAgentRepository),
+                new AssetValidationHandler(assetCatalogClient)
         );
     }
 
     private static TicketRequestDto request(Long agentId) {
-        return new TicketRequestDto("Sin red", "No hay conexión", 1L, 2L, agentId, TicketPriority.HIGH);
+        return new TicketRequestDto("Sin red", "No hay conexión", 1L, 2L, agentId, TicketPriority.HIGH, null);
     }
 
     private static <T extends GenericEntity> T active(T entity, boolean active) {
@@ -105,5 +109,27 @@ class TicketValidationChainTest {
 
         assertThat(context.getSupportAgent()).isNull();
         verify(supportAgentRepository, never()).findById(any());
+    }
+
+    @Test
+    void unknownAsset_isRejectedAtTheLastLink() {
+        when(requesterRepository.findById(1L)).thenReturn(Optional.of(active(new RequesterEntity(), true)));
+        when(categoryRepository.findById(2L)).thenReturn(Optional.of(active(new CategoryEntity(), true)));
+        when(assetCatalogClient.findById(99L)).thenReturn(Optional.empty());
+
+        TicketRequestDto withAsset = new TicketRequestDto("Sin red", "No hay conexión", 1L, 2L, null, TicketPriority.HIGH, 99L);
+
+        assertThatThrownBy(() -> chain.validate(withAsset))
+                .isInstanceOf(com.co.support.it.support_ticket_system.integration.asset.AssetNotFoundException.class);
+    }
+
+    @Test
+    void localErrors_skipTheExternalCatalog() {
+        when(requesterRepository.findById(1L)).thenReturn(Optional.empty());
+
+        TicketRequestDto withAsset = new TicketRequestDto("Sin red", "No hay conexión", 1L, 2L, null, TicketPriority.HIGH, 99L);
+
+        assertThatThrownBy(() -> chain.validate(withAsset)).isInstanceOf(RequesterNotFoundException.class);
+        verifyNoInteractions(assetCatalogClient);
     }
 }
