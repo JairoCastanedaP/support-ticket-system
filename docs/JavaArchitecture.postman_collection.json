@@ -4845,6 +4845,271 @@
 							"response": []
 						}
 					]
+				},
+				{
+					"name": "11-batch-audit-history",
+					"item": [
+						{
+							"name": "01 Resumen del histórico (antes)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history/summary",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history",
+										"summary"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.collectionVariables.set(\"historyTotalBefore\", pm.response.json().data.totalEvents);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "02 Lanzar volcado de auditoría",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "jcastaneda"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const r = pm.response.json().data;",
+											"pm.test(\"job COMPLETED\", () => pm.expect(r.status).to.eql(\"COMPLETED\"));",
+											"pm.test(\"leídos = ya copiados + escritos\", () => pm.expect(r.readCount).to.eql(r.alreadyCopiedCount + r.writeCount));",
+											"pm.test(\"solicitado por X-User-Id\", () => pm.expect(r.requestedBy).to.eql(\"jcastaneda\"));",
+											"pm.test(\"tamaño de bloque de batch_job_config\", () => pm.expect(r.chunkSize).to.be.within(1, 1000));",
+											"pm.collectionVariables.set(\"historyWritten1\", r.writeCount);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "03 Generar actividad (nueva categoría)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Demo batch {{$timestamp}}\",\n  \"description\": \"Evento generado durante la demostración\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "04 Relanzar volcado (solo eventos nuevos)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "jcastaneda"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// El relay lleva los eventos de MySQL a Oracle cada 5 segundos.",
+											"setTimeout(() => {}, 7000);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const r = pm.response.json().data;",
+											"pm.test(\"job COMPLETED\", () => pm.expect(r.status).to.eql(\"COMPLETED\"));",
+											"pm.test(\"leídos = ya copiados + escritos\", () => pm.expect(r.readCount).to.eql(r.alreadyCopiedCount + r.writeCount));",
+											"pm.test(\"solicitado por X-User-Id\", () => pm.expect(r.requestedBy).to.eql(\"jcastaneda\"));",
+											"pm.test(\"tamaño de bloque de batch_job_config\", () => pm.expect(r.chunkSize).to.be.within(1, 1000));",
+											"pm.test(\"copia los eventos nuevos\", () => pm.expect(r.writeCount).to.be.at.least(1));",
+											"pm.test(\"no vuelve a copiar lo anterior\", () => pm.expect(r.alreadyCopiedCount).to.be.at.least(1));",
+											"pm.test(\"lectura incremental\", () => pm.expect(r.fromOccurredAt).to.not.include(\"1970\"));",
+											"pm.collectionVariables.set(\"historyWritten2\", r.writeCount);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "05 Resumen del histórico (después)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history/summary",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history",
+										"summary"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const s = pm.response.json().data;",
+											"const before = Number(pm.collectionVariables.get(\"historyTotalBefore\"));",
+											"const written = Number(pm.collectionVariables.get(\"historyWritten1\")) + Number(pm.collectionVariables.get(\"historyWritten2\"));",
+											"pm.test(\"total = antes + escritos (sin duplicados)\", () => pm.expect(s.totalEvents).to.eql(before + written));",
+											"pm.test(\"clasificación por categoría\", () => pm.expect(s.byCategory).to.have.property(\"HTTP_REQUEST\"));",
+											"pm.test(\"fecha del último evento copiado\", () => pm.expect(s.lastOccurredAt).to.be.a(\"string\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "06 Método no permitido (405)",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 405\", () => pm.response.to.have.status(405));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						}
+					]
 				}
 			]
 		}
@@ -4906,6 +5171,18 @@
 			"key": "portalApiKey",
 			"value": "",
 			"description": "Pon aquí (valor actual) la misma PORTAL_API_KEY del archivo .env. No se versiona."
+		},
+		{
+			"key": "historyTotalBefore",
+			"value": ""
+		},
+		{
+			"key": "historyWritten1",
+			"value": ""
+		},
+		{
+			"key": "historyWritten2",
+			"value": ""
 		}
 	]
 }

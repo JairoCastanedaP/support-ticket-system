@@ -39,6 +39,24 @@ services:
       timeout: 10s
       retries: 20
       start_period: 5m
+  # Base histórica: recibe la auditoría con Spring Batch y guarda los metadatos de las ejecuciones.
+  postgres:
+    image: postgres:17.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${HISTORY_DB_NAME}
+      POSTGRES_USER: ${HISTORY_DB_USERNAME}
+      POSTGRES_PASSWORD: ${HISTORY_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:${HISTORY_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   app:
     image: support-ticket-system:local
     build:
@@ -52,6 +70,8 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      postgres:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       MYSQL_HOST: mysql
@@ -68,8 +88,14 @@ services:
       PORTAL_API_KEY: ${PORTAL_API_KEY}
       ASSETS_API_EMAIL: ${ASSETS_API_EMAIL}
       ASSETS_API_PASSWORD: ${ASSETS_API_PASSWORD}
+      HISTORY_DB_URL: jdbc:postgresql://postgres:5432/${HISTORY_DB_NAME}
+      HISTORY_DB_USERNAME: ${HISTORY_DB_USERNAME}
+      HISTORY_DB_PASSWORD: ${HISTORY_DB_PASSWORD}
     ports:
       - "127.0.0.1:8081:8080"
+    volumes:
+      # Log del batch del histórico de auditoría, visible en ./logs/batch del proyecto.
+      - ./logs:/app/logs
 
   # Servidor de correo de pruebas: recibe por SMTP (1025) y muestra los correos en http://localhost:8025
   mailpit:
@@ -82,4 +108,5 @@ services:
 volumes:
   mysql_data:
   oracle_data:
+  postgres_data:
 

@@ -36,7 +36,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 - Consulta de datos del solicitante en un directorio de empleados interno (sin seguridad).
 - Portal para clientes externos: consulta de un ticket por su número, protegida con el header `X-API-Key`.
 - Notificación por correo al administrador cuando un ticket pasa a `RESOLVED`, enviada por un job de Quartz.
-- Volcado masivo de tickets a demanda (Spring Batch) hacia una base histórica en PostgreSQL.
+- Volcado incremental a demanda (Spring Batch) de los eventos de auditoría de Oracle hacia una base histórica en PostgreSQL.
 - Auditoría central en Oracle mediante bandeja de salida en MySQL (implementada en la etapa 06).
 - Documentación con Swagger, REST Docs (endpoints de Ticket) y colección de Postman por fase.
 
@@ -46,7 +46,7 @@ El objetivo es construir una aplicación backend que gestione ese proceso de for
 |---|---|
 | Solicitante | Registra un incidente, consulta su evolución y aporta información solicitada |
 | Agente de soporte | Clasifica, prioriza, asigna, comenta y resuelve tickets |
-| Administrador | Mantiene categorías y datos de referencia del área de soporte; recibe el correo de tickets resueltos y lanza el volcado histórico |
+| Administrador | Mantiene categorías y datos de referencia del área de soporte; recibe el correo de tickets resueltos y lanza el volcado del histórico de auditoría |
 | Cliente externo | Sistema o persona ajena a la organización que consulta el estado de un ticket mediante el portal con API key |
 
 Estos roles describen responsabilidades del sistema, pero no implican que exista autenticación de usuarios. El actor de cada operación se toma del header opcional `X-User-Id`; si no se envía, se registra `SYSTEM`. La autenticación de la aplicación ante el servicio externo de activos (token Bearer) y la API key del portal son mecanismos distintos de un login de usuarios.
@@ -64,7 +64,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 9. Cuando el ticket pasa a `RESOLVED`, el sistema crea una notificación pendiente y un job de Quartz la envía por correo al administrador. Un fallo del correo no revierte el cambio del ticket.
 10. Los eventos de auditoría se consolidan en Oracle mediante la bandeja de salida de MySQL.
 11. Un cliente externo consulta el estado de su ticket por número en el portal, enviando su API key.
-12. El administrador lanza a demanda el volcado de tickets hacia la base histórica en PostgreSQL y consulta el resultado de la ejecución.
+12. El administrador lanza a demanda el volcado de los eventos de auditoría hacia la base histórica en PostgreSQL, recibe el resultado de la ejecución y consulta el resumen de lo copiado.
 
 ## 6. Requerimientos funcionales
 
@@ -88,7 +88,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 | RF-16 | Asociar opcionalmente un activo de TI al ticket y consultar su detalle en el servicio externo protegido con token | Must; etapa 10 |
 | RF-17 | Completar los datos del solicitante con el directorio de empleados interno | Should; etapa 10 |
 | RF-18 | Permitir que un cliente externo consulte un ticket por su número con una API key, recibiendo solo datos no internos | Must; etapa 10 |
-| RF-19 | Ejecutar a demanda el volcado masivo de tickets hacia la base histórica (PostgreSQL) y consultar el estado de la ejecución | Must; etapa 11 |
+| RF-19 | Ejecutar a demanda el volcado incremental de los eventos de auditoría de Oracle hacia la base histórica (PostgreSQL), sin duplicados, y consultar el resumen del histórico | Must; etapa 11 |
 
 ### Transiciones de estado aprobadas
 
@@ -118,7 +118,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 - **Consistencia:** cambios relacionados dentro de una transacción.
 - **Trazabilidad:** conservar quién/cuándo creó o actualizó un ticket y su historial de estados cuando los datos de identidad estén disponibles.
 - **Auditoría central:** distinguir el historial funcional del ticket del registro transversal de acciones; conservar eventos en Oracle como registros append-only e importar con identificadores idempotentes.
-- **Procesamiento batch:** validar formato y filas, evitar importaciones duplicadas, separar archivos recibidos, procesados y rechazados, y registrar errores recuperables.
+- **Procesamiento batch:** copiar solo los eventos nuevos, evitar duplicados aunque el proceso se repita, impedir dos ejecuciones simultáneas, registrar cada ejecución con sus pasos y parámetros, y dejar un log en archivo con el avance por bloques.
 - **Correo:** mantener destinatarios y credenciales SMTP en configuración externa; registrar estado e intentos de envío y limitar el mensaje a los datos necesarios.
 - **Usabilidad para desarrollo:** endpoints documentados y ejemplos reproducibles en Postman.
 - **Portabilidad:** configuración externa a los fuentes; JDK, Spring Boot y base de datos fijados en el proyecto.
@@ -128,7 +128,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 
 ## 8. Modelo relacional inicial
 
-El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. La etapa 08 completa los campos de resolución y cierre, y el motivo y el usuario de cada cambio de estado. MySQL conserva este modelo; Oracle tiene un modelo separado de eventos de auditoría (etapa 06) y PostgreSQL el histórico de tickets (etapa 11).
+El siguiente es el modelo lógico operativo del dominio de soporte, desarrollado por etapas. En la etapa 04 se implementaron las entidades principales, sus relaciones, el número y las fechas del ticket, la paginación y el borrado lógico. La etapa 08 completa los campos de resolución y cierre, y el motivo y el usuario de cada cambio de estado. MySQL conserva este modelo; Oracle tiene un modelo separado de eventos de auditoría (etapa 06) y PostgreSQL el histórico de auditoría (etapa 11).
 
 ~~~mermaid
 erDiagram
@@ -221,7 +221,7 @@ erDiagram
 
 ### Persistencia y distribución entre bases
 
-MySQL conserva las entidades operativas completas: Requester, SupportAgent, Category, Ticket, TicketComment y TicketStatusHistory. Oracle recibe eventos de auditoría de este sistema y de otras aplicaciones: la auditoría originada localmente se escribe primero en una bandeja de salida de MySQL y se consolida en Oracle mediante un proceso reintentable e idempotente. PostgreSQL recibe el volcado histórico de tickets mediante Spring Batch. No hay relaciones JPA ni claves foráneas entre bases.
+MySQL conserva las entidades operativas completas: Requester, SupportAgent, Category, Ticket, TicketComment y TicketStatusHistory. Oracle recibe eventos de auditoría de este sistema y de otras aplicaciones: la auditoría originada localmente se escribe primero en una bandeja de salida de MySQL y se consolida en Oracle mediante un proceso reintentable e idempotente. PostgreSQL recibe, mediante Spring Batch, una copia de los eventos de auditoría de Oracle con sus datos principales ya extraídos, y guarda los metadatos de las ejecuciones del batch. No hay relaciones JPA ni claves foráneas entre bases.
 
 El evento central puede identificar el sistema origen, entidad/registro, acción, fecha UTC, actor si se conoce, IP confiable cuando esté disponible, correlación y resultado. No almacenar secretos ni detalles personales innecesarios.
 
@@ -255,7 +255,7 @@ El primer incremento funcional estará listo cuando:
 ## 11. Supuestos
 
 - El sistema es backend REST, sin frontend; se prueba con Postman y Swagger.
-- Se usan tres bases relacionales: MySQL (operativa), Oracle (auditoría central) y PostgreSQL (histórico de tickets). No hay claves foráneas ni relaciones JPA entre bases.
+- Se usan tres bases relacionales: MySQL (operativa), Oracle (auditoría central) y PostgreSQL (histórico de auditoría). No hay claves foráneas ni relaciones JPA entre bases.
 - Se usan datos ficticios. Credenciales, API keys y destinatarios de correo se configuran con variables de entorno, fuera del repositorio.
 
 ## 12. Decisiones de diseño
@@ -273,13 +273,13 @@ El primer incremento funcional estará listo cuando:
 | B2 | VO | Vista `vw_ticket_summary` en MySQL mapeada a una entidad de solo lectura |
 | B3 | Projections | Interfaz de proyección para la búsqueda de tickets por texto (consulta nativa) |
 | B4 | Esquema | Scripts SQL para procedimiento, vista y datos iniciales; las tablas siguen gestionadas por Hibernate (`update`). En el perfil local (H2) los indicadores no están disponibles (501) |
-| B5 | Tercera base | PostgreSQL como histórico de tickets, alimentado por Spring Batch |
+| B5 | Tercera base | PostgreSQL como histórico de auditoría, alimentado por Spring Batch; también guarda los metadatos de Spring Batch |
 | C1 | Integración externa con token | Saliente: catálogo de activos de TI en escuelajs (login + Bearer). Entrante: portal de clientes externos protegido con `X-API-Key` |
 | C2 | Integración interna sin seguridad | Directorio de empleados (jsonplaceholder `users`): alta de un solicitante a partir de un empleado |
 | C3 | Correo | Al pasar a `RESOLVED`: notificación pendiente en la misma transacción y envío a `TICKET_ADMIN_EMAIL`; Mailpit en Docker para la demo |
 | C4 | Jobs | Quartz para el envío de correos; el relay de auditoría sigue con `@Scheduled` |
 | C5 | Mensajería | Notificaciones por correo desacopladas mediante tabla de pendientes y job |
-| C6 | Proceso batch | Spring Batch a demanda: `POST /api/v1/batch/ticket-history` (respuesta `202` con `executionId`) y consulta de estado; lectura paginada de MySQL y escritura idempotente (upsert) en PostgreSQL |
+| C6 | Proceso batch | Spring Batch a demanda y síncrono: `POST /api/v1/batch/audit-history` responde con el resultado de la ejecución. Lectura incremental de `audit_event` en Oracle (eventos posteriores al último copiado) y escritura sin duplicados en PostgreSQL; `409` si ya hay una ejecución en curso. Tamaño de bloque parametrizado en la tabla `batch_job_config`. Resumen del histórico en `GET /api/v1/batch/audit-history/summary`. Auditoría de ejecución con las tablas de metadatos de Spring Batch y log en archivo |
 | D1 | Respuesta estándar | `CustomResponse` en todos los endpoints |
 | D2 | Controllers | `GenericController` + implementación para Category, Requester y SupportAgent (CRUD con borrado lógico); Ticket con controller propio que hereda la clase base |
 | D3 | Documentación | Swagger para toda la API; REST Docs para los endpoints de Ticket |
