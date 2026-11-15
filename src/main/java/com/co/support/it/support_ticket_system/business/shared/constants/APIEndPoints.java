@@ -17,6 +17,10 @@ public final class APIEndPoints {
     public static final String BY_ID = "/{id}";
     public static final String TICKET_STATUS = "/{id}/status";
     public static final String TICKET_STATUS_HISTORY = "/{id}/status-history";
+    public static final String TICKET_BY_NUMBER = "/number/{ticketNumber}";
+    public static final String TICKET_SEARCH = "/search";
+    public static final String TICKET_SUMMARY = "/summary";
+    public static final String TICKET_INDICATORS = "/indicators";
 
     private APIEndPoints() {
     }

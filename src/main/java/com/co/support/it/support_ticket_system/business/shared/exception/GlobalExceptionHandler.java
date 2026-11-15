@@ -4,6 +4,7 @@ import com.co.support.it.support_ticket_system.generic.controller.response.Custo
 import com.co.support.it.support_ticket_system.generic.exception.BadRequestException;
 import com.co.support.it.support_ticket_system.generic.exception.BusinessRuleException;
 import com.co.support.it.support_ticket_system.generic.exception.DuplicateException;
+import com.co.support.it.support_ticket_system.generic.exception.FeatureNotAvailableException;
 import com.co.support.it.support_ticket_system.generic.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -55,6 +57,17 @@ public class GlobalExceptionHandler {
                 : "El valor '" + exception.getValue() + "' no tiene un formato válido";
 
         return build(HttpStatus.BAD_REQUEST, VALIDATION_MESSAGE, Map.of(exception.getName(), detail));
+    }
+
+    /**
+     * Falta un parámetro obligatorio de la URL, por ejemplo ?text= en la búsqueda.
+     */
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<CustomResponse<Map<String, String>>> handleMissingParameter(
+            MissingServletRequestParameterException exception
+    ) {
+        return build(HttpStatus.BAD_REQUEST, VALIDATION_MESSAGE,
+                Map.of(exception.getParameterName(), "El parámetro es obligatorio"));
     }
 
     /**
@@ -104,6 +117,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({DuplicateException.class, BusinessRuleException.class})
     public ResponseEntity<CustomResponse<Void>> handleConflict(RuntimeException exception) {
         return build(HttpStatus.CONFLICT, exception.getMessage(), null);
+    }
+
+    @ExceptionHandler(FeatureNotAvailableException.class)
+    public ResponseEntity<CustomResponse<Void>> handleFeatureNotAvailable(FeatureNotAvailableException exception) {
+        return build(HttpStatus.NOT_IMPLEMENTED, exception.getMessage(), null);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

@@ -3317,6 +3317,694 @@
 							]
 						}
 					]
+				},
+				{
+					"name": "09-advanced-persistence",
+					"item": [
+						{
+							"name": "01 Preparar categoría",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{categoryName}}\",\n  \"description\": \"Impresoras\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.collectionVariables.set(\"categoryName\", \"Impresión \" + Date.now());"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.collectionVariables.set(\"categoryId\", pm.response.json().data.id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "02 Preparar solicitante",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/requesters",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"requesters"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Sofía\",\n  \"surname\": \"Lara\",\n  \"email\": \"{{requesterEmail}}\",\n  \"phoneNumber\": \"3007778899\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.collectionVariables.set(\"requesterEmail\", \"sofia.\" + Date.now() + \"@example.com\");"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.collectionVariables.set(\"requesterId\", pm.response.json().data.id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "03 Preparar agente",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/support-agents",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"support-agents"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Andrés\",\n  \"surname\": \"Mejía\",\n  \"email\": \"{{agentEmail}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.collectionVariables.set(\"agentEmail\", \"andres.\" + Date.now() + \"@example.com\");"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.collectionVariables.set(\"agentId\", pm.response.json().data.id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "04 Preparar ticket",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"{{searchText}} en contabilidad\",\n  \"description\": \"La impresora del segundo piso no responde\",\n  \"requesterId\": {{requesterId}},\n  \"categoryId\": {{categoryId}},\n  \"supportAgentId\": {{agentId}},\n  \"priority\": \"MEDIUM\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.collectionVariables.set(\"searchText\", \"Impresora atascada \" + Date.now());"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.collectionVariables.set(\"ticketId\", pm.response.json().data.id);",
+											"pm.collectionVariables.set(\"ticketNumber\", pm.response.json().data.ticketNumber);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "05 Atender ticket",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"IN_PROGRESS\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "06 Resolver ticket",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"RESOLVED\",\n  \"reason\": \"Se retiró el papel atascado\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "07 Buscar por número (JPQL)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/number/{{ticketNumber}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"number",
+										"{{ticketNumber}}"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const t = pm.response.json().data;",
+											"pm.test(\"mismo ticket\", () => pm.expect(t.id).to.eql(pm.collectionVariables.get(\"ticketId\")));",
+											"pm.test(\"trae categoría, solicitante y agente\", () => { pm.expect(t.categoryName).to.eql(pm.collectionVariables.get(\"categoryName\")); pm.expect(t.requesterName).to.eql(\"Sofía\"); pm.expect(t.supportAgentName).to.eql(\"Andrés\"); });"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "08 Buscar por número en minúsculas",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/number/{{ticketNumber}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"number",
+										"{{ticketNumber}}"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.request.url.path[pm.request.url.path.length - 1] = pm.collectionVariables.get(\"ticketNumber\").toLowerCase();"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "09 Número inexistente (404)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/number/TCK-1999-000000",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"number",
+										"TCK-1999-000000"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "10 Búsqueda por texto (SQL nativo + Projection)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/search?text={{searchText}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"search"
+									],
+									"query": [
+										{
+											"key": "text",
+											"value": "{{searchText}}"
+										}
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const r = pm.response.json().data;",
+											"pm.test(\"encuentra el ticket\", () => pm.expect(r.map(x => x.ticketNumber)).to.include(pm.collectionVariables.get(\"ticketNumber\")));",
+											"pm.test(\"solo columnas de la proyección\", () => pm.expect(Object.keys(r[0])).to.have.members([\"id\", \"ticketNumber\", \"title\", \"status\", \"priority\"]));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "11 Búsqueda con texto corto (400)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/search?text=ab",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"search"
+									],
+									"query": [
+										{
+											"key": "text",
+											"value": "ab"
+										}
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "12 Búsqueda sin parámetro (400)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/search",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"search"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "13 Listado resumido (vista)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/summary?status=RESOLVED&size=50",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"summary"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "RESOLVED"
+										},
+										{
+											"key": "size",
+											"value": "50"
+										}
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const page = pm.response.json().data;",
+											"const t = page.content.find(x => x.ticketId === pm.collectionVariables.get(\"ticketId\"));",
+											"pm.test(\"aparece el ticket resuelto\", () => pm.expect(t).to.be.an(\"object\"));",
+											"pm.test(\"columnas calculadas por la vista\", () => { pm.expect(t.requesterFullName).to.eql(\"Sofía Lara\"); pm.expect(t.agentFullName).to.eql(\"Andrés Mejía\"); pm.expect(t.commentCount).to.eql(0); pm.expect(t.ageHours).to.be.a(\"number\"); });",
+											"pm.test(\"solo tickets RESOLVED\", () => pm.expect(page.content.every(x => x.status === \"RESOLVED\")).to.be.true);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "14 Listado resumido con prioridad inválida (400)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/summary?priority=URGENTE",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"summary"
+									],
+									"query": [
+										{
+											"key": "priority",
+											"value": "URGENTE"
+										}
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "15 Indicadores (procedimiento almacenado)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/indicators",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"indicators"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const i = pm.response.json().data;",
+											"pm.test(\"todos los estados\", () => pm.expect(Object.keys(i.byStatus)).to.eql([\"OPEN\", \"IN_PROGRESS\", \"WAITING_FOR_REQUESTER\", \"RESOLVED\", \"CLOSED\"]));",
+											"pm.test(\"total = suma por estado\", () => pm.expect(i.totalTickets).to.eql(Object.values(i.byStatus).reduce((a, b) => a + b, 0)));",
+											"pm.test(\"incluye la categoría del ticket\", () => pm.expect(i.byCategory[pm.collectionVariables.get(\"categoryName\")]).to.eql(1));",
+											"pm.test(\"promedio de resolución\", () => pm.expect(i.averageResolutionHours).to.be.a(\"number\"));"
+										]
+									}
+								}
+							]
+						}
+					]
 				}
 			]
 		}
@@ -3356,6 +4044,14 @@
 		},
 		{
 			"key": "closeTicketId",
+			"value": ""
+		},
+		{
+			"key": "ticketNumber",
+			"value": ""
+		},
+		{
+			"key": "searchText",
 			"value": ""
 		}
 	]

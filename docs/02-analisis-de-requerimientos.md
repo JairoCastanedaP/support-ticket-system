@@ -79,7 +79,7 @@ Estos roles describen responsabilidades del sistema, pero no implican que exista
 | RF-07 | Cambiar estado de ticket respetando transiciones permitidas | Must |
 | RF-08 | Agregar comentarios de seguimiento y nota de resolución | Must |
 | RF-09 | Mantener categorías de soporte activas/inactivas | Should |
-| RF-10 | Consultar cantidades por estado/categoría y tiempos promedio de resolución | Should |
+| RF-10 | Consultar cantidades por estado/categoría y tiempos promedio de resolución | Should; etapa 09 |
 | RF-11 | Registrar automáticamente fechas de creación y actualización | Should |
 | RF-12 | Notificar por correo al administrador cuando un ticket pase a `RESOLVED`; configurar el destinatario fuera del código | Must; etapa 10 |
 | RF-13 | Eliminar lógicamente un ticket, excluirlo de consultas normales y conservar su registro e historial | Must |
@@ -271,8 +271,8 @@ El primer incremento funcional estará listo cuando:
 | A7 | Actor | Header opcional `X-User-Id`; si falta, `SYSTEM` |
 | B1 | Procedimiento almacenado | `usp_ticket_indicators` en MySQL: cantidades por estado y categoría y tiempo promedio de resolución (RF-10) |
 | B2 | VO | Vista `vw_ticket_summary` en MySQL mapeada a una entidad de solo lectura |
-| B3 | Projections | Interfaz de proyección para el listado resumido de tickets |
-| B4 | Esquema | Scripts SQL para procedimiento, vista y datos iniciales; las tablas siguen gestionadas por Hibernate (`update`) |
+| B3 | Projections | Interfaz de proyección para la búsqueda de tickets por texto (consulta nativa) |
+| B4 | Esquema | Scripts SQL para procedimiento, vista y datos iniciales; las tablas siguen gestionadas por Hibernate (`update`). En el perfil local (H2) los indicadores no están disponibles (501) |
 | B5 | Tercera base | PostgreSQL como histórico de tickets, alimentado por Spring Batch |
 | C1 | Integración externa con token | Saliente: catálogo de activos de TI en escuelajs (login + Bearer). Entrante: portal de clientes externos protegido con `X-API-Key` |
 | C2 | Integración interna sin seguridad | Directorio de empleados (jsonplaceholder `users`) para completar datos del solicitante |
