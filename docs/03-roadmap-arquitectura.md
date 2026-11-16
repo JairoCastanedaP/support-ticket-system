@@ -26,12 +26,12 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 | 08 | architecture/08-domain-business-rules | Ciclo de vida del ticket con transiciones y `PATCH` de estado, Strategy por estado destino, Chain of Responsibility para validar, número `TCK-año-consecutivo` y pruebas unitarias |
 | 09 | architecture/09-advanced-persistence | JPQL, SQL nativo con Projection, vista `vw_ticket_summary` como VO de solo lectura, procedimiento `usp_ticket_indicators` y scripts SQL con datos iniciales |
 | 10 | architecture/10-integrations | Catálogo de activos con token Bearer, directorio interno de empleados, portal con API key, correo con Quartz y Mailpit, validadores `@ValidPhone` y `@ValidTicketNumber` |
+| 11 | architecture/11-batch-audit-history | PostgreSQL como tercera base; Spring Batch copia la auditoría de Oracle de forma incremental, con bloque parametrizado, auditoría de ejecución en las tablas de Spring Batch y log en archivo |
 
 ## 4. Etapas de la entrega final
 
 | N.º | Rama | Componentes de arquitectura |
 |---|---|---|
-| 11 | architecture/11-batch-ticket-history | Tercera base de datos, procesamiento batch |
 | 12 | architecture/12-documentation-demo | Documentación y demostración |
 
 ### 07 — Base REST
@@ -92,13 +92,20 @@ Cada técnica atiende una consulta distinta, todas de solo lectura en `TicketQue
 - Pruebas unitarias: validadores, interceptor de API key, envío de correos con reintentos, normalización del directorio y eslabón del activo.
 - **Pruebas Postman:** teléfono inválido → 400, alta desde el directorio (repetida → 409, inexistente → 404), ticket con activo real y con activo inexistente → 404, detalle del activo, portal sin header / clave incorrecta → 401, número inválido → 400, inexistente → 404, consulta reducida, y correo visible en Mailpit tras resolver. La variable `portalApiKey` de la colección se completa con la clave del `.env`.
 
-### 11 — Volcado histórico con Spring Batch
+### 11 — Histórico de auditoría con Spring Batch
 
-- PostgreSQL en Docker Compose con datasource y pool propios.
-- Job por bloques (chunks): lectura paginada en MySQL → transformación a registro histórico → upsert en PostgreSQL.
-- `POST /api/v1/batch/ticket-history` (parámetros opcionales `fromDate`, `toDate`) → `202` con `executionId`.
-- `GET /api/v1/batch/ticket-history/{executionId}` → estado y conteos de lectura, escritura y omitidos.
-- **Pruebas Postman:** lanzar el job, consultar el estado, relanzarlo sin duplicar registros.
+Los eventos de auditoría recorren las tres bases: MySQL (outbox) → Oracle (auditoría central, relay cada 5 s) → PostgreSQL (histórico, Spring Batch a demanda).
+
+- PostgreSQL en Docker Compose con datasource y pool propios; en el perfil local, una tercera base H2 en memoria.
+- **Job por bloques (chunks):** lee de `audit_event` (Oracle) los eventos posteriores al último copiado → clasifica el evento (petición HTTP o evento de negocio) y extrae del JSON sus datos principales → escribe en `audit_event_history` (PostgreSQL) sin duplicar (`ON CONFLICT DO NOTHING`; en H2, `MERGE ... KEY`).
+- **Ventana de seguridad:** cada ejecución vuelve a leer los 10 minutos anteriores al último evento copiado, por si el relay entregó eventos con retraso; los que ya están en el histórico se descartan y se informan como "ya copiados".
+- **Tamaño de bloque parametrizado** en la tabla `batch_job_config` de PostgreSQL; se lee en cada ejecución, así que cambia sin reiniciar la aplicación.
+- **`POST /api/v1/batch/audit-history`** (síncrono): responde con el estado, los eventos leídos y escritos, el tamaño de bloque y la duración. Si ya hay una ejecución en curso responde `409`.
+- **`GET /api/v1/batch/audit-history/summary`:** cantidades del histórico por tipo de evento y fecha del último evento copiado.
+- **Auditoría de ejecución:** las tablas de metadatos de Spring Batch en PostgreSQL (`BATCH_JOB_EXECUTION`, `BATCH_JOB_EXECUTION_PARAMS`, `BATCH_STEP_EXECUTION`…) registran cada ejecución con quién la pidió, desde qué fecha copió, sus pasos y sus contadores.
+- **Log en archivo** `logs/batch/audit-history.log`: inicio, avance por bloque, fin de cada paso y resultado, con rotación diaria. En Docker la carpeta se monta en `./logs` del proyecto.
+- Pruebas unitarias: clasificación de eventos, parámetros del job (ventana, bloque por defecto, usuario) y rechazo de una segunda ejecución simultánea.
+- **Pruebas Postman:** resumen antes, lanzar el job (leídos = ya copiados + escritos), generar actividad, relanzar (solo copia lo nuevo y la lectura es incremental), resumen después (total = antes + escritos, sin duplicados).
 
 ### 12 — Documentación y demo
 
@@ -117,7 +124,7 @@ Cada técnica atiende una consulta distinta, todas de solo lectura en `TicketQue
 | Dominio | Transiciones en `TicketStatus`, Chain of Responsibility (validación), Strategy (reglas por estado destino) | 08 |
 | Servicio genérico | `GenericService` parametrizado con interfaces funcionales; servicios especializados (SRP) | 05, 07 |
 | Lógica de servicios | Validaciones, reglas del ciclo de vida, mappers, outbox hacia Oracle, servicios externos | 08, 10 |
-| Integración | Activos con token, directorio interno, portal con API key, Quartz + correo, Spring Batch | 10, 11 |
+| Integración | Activos con token, directorio interno, portal con API key, Quartz + correo, Spring Batch (histórico de auditoría) | 10, 11 |
 | Controller | Interfaces + herencia, `APIEndPoints`, `/api/v1`, `@RestControllerAdvice`, `CustomResponse` | 07 |
 | Componentes especiales | `@ValidPhone`, `@ValidTicketNumber`, interceptores de auditoría y API key | 06, 07, 10 |
 | Documentación | Swagger, REST Docs, Postman por etapa | 12 |

@@ -76,7 +76,7 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 - La escritura de auditoría originada por una operación de negocio se hará primero en una bandeja de salida local en MySQL dentro de la misma transacción. Un proceso reintentable la publicará en Oracle con identificadores idempotentes. No se dependerá de una transacción atómica distribuida entre las bases.
 - Cada base tendrá configuración, pool, entidades y repositorios separados. No crear relaciones JPA ni claves foráneas entre bases distintas.
 - La tabla central de auditoría será append-only y tendrá campos de origen, evento, entidad/acción, fecha, actor cuando esté disponible, IP confiable cuando corresponda, correlación y resultado. Minimizar los detalles almacenados. El historial de estados del ticket sigue siendo el registro funcional de su ciclo de vida.
-- El histórico de tickets se alimenta con un proceso Spring Batch lanzado a demanda: lectura paginada en MySQL, transformación y escritura idempotente (upsert) en PostgreSQL, procesando por bloques (chunks) y registrando el resultado de cada ejecución.
+- El histórico de auditoría se alimenta con un proceso Spring Batch lanzado a demanda: lectura incremental de los eventos de Oracle, clasificación y extracción de datos del evento, y escritura idempotente en PostgreSQL, procesando por bloques (chunks). Cada ejecución, sus pasos y sus parámetros quedan registrados en las tablas de metadatos de Spring Batch, y el detalle de cada bloque en un archivo de log.
 - Las notificaciones de correo se crearán por eventos de negocio, en particular por transición a estado final del ticket, y se enviarán asíncronamente a destinatarios configurables. Guardar estado e intentos para reintentar sin revertir la operación del ticket. Las credenciales SMTP y correos de destinatarios se configuran fuera del repositorio.
 - Consumir servicios externos mediante adaptadores en `integration`, separados del negocio y configurados por propiedades. Definir propósito, autenticación ante el proveedor, tiempos de espera, errores HTTP/de red y comportamiento ante indisponibilidad antes de implementar el cliente. La interfaz del puerto debe expresar las necesidades del negocio; el adaptador traduce el protocolo y los DTOs externos. Usar el identificador recibido en cada operación, tratar respuestas vacías explícitamente y no registrar credenciales ni tokens.
 
@@ -109,9 +109,9 @@ Este esquema es una dirección objetivo, no una instrucción de migración inmed
 | Productividad | Lombok, de forma moderada | Reducir código repetitivo |
 | Base operativa | MySQL 8.4 | Tickets, categorías, solicitantes, agentes, comentarios, historial, bandeja de salida y notificaciones |
 | Base de auditoría central | Oracle Free | Eventos de auditoría de esta aplicación y de otros sistemas |
-| Base histórica | PostgreSQL | Histórico de tickets alimentado por Spring Batch |
+| Base histórica | PostgreSQL | Histórico de auditoría alimentado por Spring Batch y metadatos de las ejecuciones |
 | Base local de desarrollo | H2 | Ejecuciones rápidas; no sustituye la verificación con Docker |
-| Procesos batch | Spring Batch | Volcado masivo de tickets a demanda hacia PostgreSQL |
+| Procesos batch | Spring Batch | Volcado incremental de la auditoría de Oracle hacia PostgreSQL, a demanda |
 | Tareas programadas | Quartz y `@Scheduled` | Envío de correos (Quartz) y relay de auditoría (`@Scheduled`) |
 | Correo | Spring Mail + Mailpit | Notificación de tickets resueltos; Mailpit captura los correos en desarrollo |
 | Cliente HTTP | `RestClient` | Servicio externo de activos (con token) y directorio interno (sin seguridad) |
@@ -134,7 +134,7 @@ Las versiones concretas de las dependencias se gestionan en `pom.xml`.
 | Estilo arquitectónico | Monolito modular en capas |
 | Organización de paquetes | Módulos por funcionalidad en `business/*`; contratos y componentes reutilizables en `generic`; integraciones e infraestructura separadas |
 | Abstracciones genéricas | Se adoptan `GenericController`, `GenericService`, `CustomResponse` y la jerarquía de excepciones porque ya hay tres catálogos equivalentes (Category, Requester, SupportAgent). Ticket conserva servicio y reglas propias |
-| Bases de datos | MySQL operativa, Oracle para auditoría central, PostgreSQL para el histórico |
+| Bases de datos | MySQL operativa, Oracle para auditoría central, PostgreSQL para el histórico de auditoría |
 | Relaciones entre bases | Sin claves foráneas ni relaciones JPA cruzadas; usar identificadores y consultar la fuente propietaria |
 | Integración externa saliente | Catálogo de activos de TI (escuelajs) con login y token Bearer; credenciales en variables de entorno, sin registrar tokens |
 | Integración externa entrante | Portal de clientes externos con `X-API-Key`, validada por un interceptor; no es un login de usuarios |

@@ -16,6 +16,8 @@ public final class APIEndPoints {
     public static final String TICKET_COMMENTS = TICKETS + "/{ticketId}/comments";
     public static final String PORTAL = API_BASE + "/portal";
     public static final String PORTAL_TICKETS = PORTAL + "/tickets";
+    public static final String BATCH_AUDIT_HISTORY = API_BASE + "/batch/audit-history";
+    public static final String SUMMARY = "/summary";
 
     public static final String BY_ID = "/{id}";
     public static final String BY_TICKET_NUMBER = "/{ticketNumber}";

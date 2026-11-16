@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Configuración por defecto de Spring Boot (consola) más un archivo dedicado al batch del histórico de auditoría.
+  La carpeta se puede cambiar con la variable BATCH_LOG_DIR (por defecto, logs/batch dentro del directorio de trabajo).
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <property name="BATCH_LOG_DIR" value="${BATCH_LOG_DIR:-logs/batch}"/>
+
+    <appender name="BATCH_AUDIT_HISTORY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${BATCH_LOG_DIR}/audit-history.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Un archivo por día; se conservan 7 días. -->
+            <fileNamePattern>${BATCH_LOG_DIR}/audit-history.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %msg%n%ex</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Solo el logger del batch va al archivo; también sigue saliendo por consola. -->
+    <logger name="batch.audit-history" level="INFO">
+        <appender-ref ref="BATCH_AUDIT_HISTORY_FILE"/>
+    </logger>
+</configuration>

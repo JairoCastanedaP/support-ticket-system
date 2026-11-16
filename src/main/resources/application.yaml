@@ -23,6 +23,13 @@ spring:
       schema-locations: classpath:db/h2/schema.sql
       data-locations: classpath:db/data.sql
 
+  # Spring Batch: no ejecutar jobs al arrancar; crear sus tablas de metadatos en la base histórica.
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
   h2:
     console:
       enabled: true
@@ -34,6 +41,12 @@ app:
   datasource:
     oracle:
       url: jdbc:h2:mem:auditlocal
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver
+    # Perfil local: el histórico de auditoría usa una tercera base H2 en memoria (modo PostgreSQL).
+    history:
+      url: jdbc:h2:mem:historylocal;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
       username: sa
       password:
       driver-class-name: org.h2.Driver
@@ -59,3 +72,8 @@ app:
     from: ${MAIL_FROM:no-reply@support-ticket.local}
     interval-seconds: 30
     max-attempts: 3
+  # Histórico de auditoría (etapa 11). Se vuelve a leer este margen antes del último evento copiado,
+  # por si el relay entregó eventos con retraso; los ya copiados se descartan.
+  batch:
+    audit-history:
+      overlap-minutes: 10

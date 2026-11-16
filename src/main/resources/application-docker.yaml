@@ -31,6 +31,14 @@ app:
       configuration:
         maximum-pool-size: 5
         minimum-idle: 1
+    history:
+      url: ${HISTORY_DB_URL:jdbc:postgresql://postgres:5432/audit_history}
+      username: ${HISTORY_DB_USERNAME}
+      password: ${HISTORY_DB_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+      configuration:
+        maximum-pool-size: 5
+        minimum-idle: 1
   persistence:
     stored-procedures-enabled: true
   notifications:
