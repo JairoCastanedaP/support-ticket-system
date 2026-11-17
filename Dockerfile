@@ -2,7 +2,9 @@ FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
 
 COPY . .
-RUN chmod +x ./mvnw && ./mvnw -DskipTests package
+# Las pruebas se ejecutan en la construcción: generan la documentación REST Docs (/docs/index.html)
+# y la imagen solo se construye si todas pasan.
+RUN chmod +x ./mvnw && ./mvnw package
 
 FROM eclipse-temurin:25-jre
 WORKDIR /app

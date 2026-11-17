@@ -77,3 +77,11 @@ app:
   batch:
     audit-history:
       overlap-minutes: 10
+
+# Documentación OpenAPI: Swagger UI en /swagger-ui.html y el contrato en /v3/api-docs.
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    tags-sorter: alpha
+  default-produces-media-type: application/json

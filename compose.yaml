@@ -29,10 +29,14 @@ services:
     environment:
       ORACLE_PWD: ${ORACLE_PASSWORD}
       ORACLE_CHARACTERSET: AL32UTF8
+      # Los usa el script que crea el usuario de auditoría si no existe (infrastructure/oracle/startup).
+      ORACLE_AUDIT_USERNAME: ${ORACLE_AUDIT_USERNAME}
+      ORACLE_AUDIT_PASSWORD: ${ORACLE_AUDIT_PASSWORD}
     ports:
       - "${ORACLE_PORT:-1521}:1521"
     volumes:
       - oracle_data:/opt/oracle/oradata
+      - ./infrastructure/oracle/startup:/opt/oracle/scripts/startup:ro
     healthcheck:
       test: ["CMD-SHELL", "/opt/oracle/checkDBStatus.sh >/dev/null 2>&1"]
       interval: 30s
