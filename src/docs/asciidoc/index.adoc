@@ -1,0 +1,303 @@
+= Support Ticket System — API REST
+:doctype: book
+:toc: left
+:toclevels: 2
+:toc-title: Contenido
+:sectanchors:
+:source-highlighter: highlightjs
+
+Documentación generada con Spring REST Docs: cada ejemplo es la petición y la respuesta reales de una prueba automática,
+así que la documentación siempre coincide con el comportamiento de la API.
+
+[[overview]]
+== Generalidades
+
+=== Formato de respuesta
+
+Todas las respuestas usan el mismo sobre (`CustomResponse`):
+
+|===
+| Campo | Descripción
+| `status` | `SUCCESS`, `EMPTY` (consulta sin resultados) o `ERROR`
+| `message` | Mensaje legible del resultado
+| `timestamp` | Fecha y hora de la respuesta (`dd/MM/yyyy HH:mm:ss`)
+| `data` | Contenido de la respuesta; en los errores de validación, un mapa campo → mensaje
+|===
+
+=== Códigos HTTP
+
+|===
+| Código | Uso
+| `200 OK` | Consulta, actualización, cambio de estado, borrado lógico o volcado exitoso
+| `201 Created` | Recurso creado; el header `Location` apunta al nuevo recurso
+| `400 Bad Request` | Datos inválidos, formato incorrecto o dato obligatorio faltante según el contexto
+| `401 Unauthorized` | Portal sin `X-API-Key` o con una clave incorrecta
+| `404 Not Found` | El recurso no existe
+| `405 Method Not Allowed` | Método HTTP no soportado en la ruta
+| `409 Conflict` | Valor único repetido, registro inactivo, transición no permitida o volcado en curso
+| `501 Not Implemented` | Indicadores en el perfil local (H2 no ejecuta el procedimiento de MySQL)
+| `503 Service Unavailable` | Un servicio externo no respondió
+|===
+
+=== Headers
+
+|===
+| Header | Uso
+| `X-User-Id` | Opcional. Usuario que ejecuta la operación; queda en la auditoría y en el historial. Si no se envía, se registra `SYSTEM`.
+| `X-API-Key` | Obligatorio en el portal de clientes.
+| `X-Correlation-ID` | Opcional. Identificador para correlacionar la petición en la auditoría; si no se envía, se genera.
+|===
+
+== Categorías
+
+Clasificación de los tickets. CRUD genérico con borrado lógico; el nombre es único.
+
+[[categories-create]]
+=== Crear categoría
+
+Responde `201` con el header `Location`. `409` si el nombre ya existe.
+
+operation::categories/create[snippets='curl-request,http-request,request-headers,request-fields,http-response,response-fields']
+
+[[categories-list]]
+=== Listar categorías activas
+
+Las eliminadas lógicamente no aparecen.
+
+operation::categories/list[snippets='curl-request,http-request,http-response,response-fields']
+
+[[categories-get]]
+=== Consultar categoría
+
+Incluye las inactivas. `404` si no existe.
+
+operation::categories/get[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[categories-update]]
+=== Actualizar categoría
+
+`409` si el nombre ya lo usa otra categoría.
+
+operation::categories/update[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[categories-delete]]
+=== Eliminar categoría (borrado lógico)
+
+Responde `200`; la categoría queda inactiva.
+
+operation::categories/delete[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+== Solicitantes
+
+Personas que reportan tickets. El correo es único.
+
+[[requesters-create]]
+=== Crear solicitante
+
+El teléfono se valida con `@ValidPhone`.
+
+operation::requesters/create[snippets='curl-request,http-request,request-fields,http-response,response-fields']
+
+[[requesters-list]]
+=== Listar solicitantes activos
+
+operation::requesters/list[snippets='curl-request,http-request,http-response,response-fields']
+
+[[requesters-get]]
+=== Consultar solicitante
+
+operation::requesters/get[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[requesters-update]]
+=== Actualizar solicitante
+
+operation::requesters/update[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[requesters-delete]]
+=== Eliminar solicitante (borrado lógico)
+
+operation::requesters/delete[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[requesters-from-directory]]
+=== Crear solicitante desde el directorio de empleados
+
+Consulta el directorio interno (servicio sin seguridad). `404` si el empleado no existe, `409` si el correo ya está registrado, `503` si el directorio no responde.
+
+operation::requesters/from-directory[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+== Agentes de soporte
+
+Agentes que atienden los tickets. El correo es único.
+
+[[support-agents-create]]
+=== Crear agente
+
+operation::support-agents/create[snippets='curl-request,http-request,request-fields,http-response,response-fields']
+
+[[support-agents-list]]
+=== Listar agentes activos
+
+operation::support-agents/list[snippets='curl-request,http-request,http-response,response-fields']
+
+[[support-agents-get]]
+=== Consultar agente
+
+operation::support-agents/get[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[support-agents-update]]
+=== Actualizar agente
+
+operation::support-agents/update[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[support-agents-delete]]
+=== Eliminar agente (borrado lógico)
+
+operation::support-agents/delete[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+== Tickets
+
+Ciclo de vida del ticket.
+
+[[tickets-create]]
+=== Crear ticket
+
+Nace en `OPEN` con número `TCK-AAAA-NNNNNN`. La cadena de validación revisa solicitante, categoría, agente y activo de TI: `404` si no existen, `409` si están inactivos, `503` si el catálogo de activos no responde.
+
+operation::tickets/create[snippets='curl-request,http-request,request-fields,http-response,response-fields']
+
+[[tickets-list]]
+=== Listar tickets
+
+Paginado, con filtros opcionales.
+
+operation::tickets/list[snippets='curl-request,http-request,query-parameters,http-response,response-fields']
+
+[[tickets-get]]
+=== Consultar ticket
+
+operation::tickets/get[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[tickets-update]]
+=== Editar ticket
+
+No cambia el estado. `409` si el ticket está cerrado.
+
+operation::tickets/update[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[tickets-change-status]]
+=== Cambiar estado
+
+Transiciones: `OPEN→IN_PROGRESS/CLOSED`, `IN_PROGRESS→WAITING_FOR_REQUESTER/RESOLVED`, `WAITING_FOR_REQUESTER→IN_PROGRESS/CLOSED`, `RESOLVED→CLOSED/IN_PROGRESS`; `CLOSED` es terminal. `409` si la transición no está permitida o si pasa a `IN_PROGRESS` sin agente; `400` si falta la nota al resolver o el motivo al cerrar sin resolver. Al resolver se programa el correo al administrador.
+
+operation::tickets/change-status[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[tickets-status-history]]
+=== Historial de estados
+
+Cada cambio con motivo, usuario (`X-User-Id`) y fecha.
+
+operation::tickets/status-history[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[comments-create]]
+=== Agregar comentario
+
+operation::comments/create[snippets='curl-request,http-request,path-parameters,request-fields,http-response,response-fields']
+
+[[comments-list]]
+=== Listar comentarios
+
+operation::comments/list[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+== Consultas de tickets
+
+Consultas de solo lectura sobre distintas técnicas de persistencia.
+
+[[queries-by-number]]
+=== Buscar por número (JPQL)
+
+Consulta JPQL con `join fetch`; no distingue mayúsculas.
+
+operation::queries/by-number[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+[[queries-search]]
+=== Buscar por texto (SQL nativo + Projection)
+
+Devuelve solo las columnas de la proyección; máximo 50 resultados.
+
+operation::queries/search[snippets='curl-request,http-request,query-parameters,http-response,response-fields']
+
+[[queries-summary]]
+=== Listado resumido (vista)
+
+Lee la vista `vw_ticket_summary`, mapeada como entidad de solo lectura.
+
+operation::queries/summary[snippets='curl-request,http-request,query-parameters,http-response,response-fields']
+
+[[queries-indicators]]
+=== Indicadores (procedimiento almacenado)
+
+Ejecuta `usp_ticket_indicators` en MySQL. En el perfil local (H2) responde `501`.
+
+operation::queries/indicators[snippets='curl-request,http-request,http-response,response-fields']
+
+[[queries-asset]]
+=== Activo de TI del ticket (servicio externo con token)
+
+Login y token `Bearer` contra el catálogo de activos. `503` si no responde.
+
+operation::queries/asset[snippets='curl-request,http-request,path-parameters,http-response,response-fields']
+
+== Portal de clientes
+
+Consulta para clientes externos, protegida con el header `X-API-Key`.
+
+[[portal-ticket]]
+=== Consultar ticket desde el portal
+
+Respuesta reducida, sin datos personales ni internos. El número se valida con `@ValidTicketNumber`.
+
+operation::portal/ticket[snippets='curl-request,http-request,request-headers,path-parameters,http-response,response-fields']
+
+== Histórico de auditoría (Spring Batch)
+
+Copia la auditoría central (Oracle) al histórico (PostgreSQL).
+
+[[batch-run]]
+=== Lanzar volcado
+
+Síncrono. Copia los eventos posteriores al último ya copiado (con una ventana de 10 minutos), en bloques del tamaño configurado en `batch_job_config`. `409` si ya hay un volcado en curso.
+
+operation::batch/run[snippets='curl-request,http-request,http-response,response-fields']
+
+[[batch-summary]]
+=== Resumen del histórico
+
+operation::batch/summary[snippets='curl-request,http-request,http-response,response-fields']
+
+== Errores
+
+Todos los errores usan el mismo sobre `CustomResponse` con `status = ERROR`.
+
+[[errors-validation]]
+=== Validación (400)
+
+`data` trae un mapa campo → mensaje.
+
+operation::errors/validation[snippets='curl-request,http-request,http-response,response-fields']
+
+[[errors-not-found]]
+=== Recurso inexistente (404)
+
+operation::errors/not-found[snippets='curl-request,http-request,http-response,response-fields']
+
+[[errors-conflict]]
+=== Regla de negocio (409)
+
+Ejemplo: transición de estado no permitida.
+
+operation::errors/conflict[snippets='curl-request,http-request,http-response,response-fields']
+
+[[errors-unauthorized]]
+=== Portal sin API key (401)
+
+operation::errors/unauthorized[snippets='curl-request,http-request,http-response,response-fields']

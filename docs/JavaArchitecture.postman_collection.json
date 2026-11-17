@@ -8,100 +8,6 @@
 	},
 	"item": [
 		{
-			"name": "Layered - app1",
-			"item": [
-				{
-					"name": "getAllCustomers",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8081/api/v1/customers",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8081",
-							"path": [
-								"api",
-								"v1",
-								"customers"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "createCustomer",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Gerardo\",\n  \"email\": \"gerardo@gmail.com\",\n  \"phone\": \"3218564932\",\n  \"address\": \"Sogamoso\",\n  \"state\": \"activo\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8081/api/v1/customers",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8081",
-							"path": [
-								"api",
-								"v1",
-								"customers"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "updateCustomer",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Jairo CAstaneda\",\n  \"email\": \"jairocsataneda@gmail.com\",\n  \"phone\": \"3151234567\",\n  \"address\": \"Bogotá\",\n  \"state\": \"activo\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:8081/api/v1/customers",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8081",
-							"path": [
-								"api",
-								"v1",
-								"customers"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "New Request",
-					"request": {
-						"method": "GET",
-						"header": []
-					},
-					"response": []
-				}
-			]
-		},
-		{
 			"name": "Project",
 			"item": [
 				{
@@ -5104,6 +5010,795 @@
 										"exec": [
 											"pm.test(\"HTTP 405\", () => pm.response.to.have.status(405));",
 											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));"
+										]
+									}
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "12-demo",
+					"item": [
+						{
+							"name": "01 Categorías (datos iniciales)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/categories",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"categories"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const c = pm.response.json().data.find(x => x.name === \"Hardware\");",
+											"pm.test(\"existe la categoría Hardware de los datos iniciales\", () => pm.expect(c).to.be.an(\"object\"));",
+											"pm.collectionVariables.set(\"categoryId\", c.id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "02 Solicitantes",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/requesters",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"requesters"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.collectionVariables.set(\"requesterId\", pm.response.json().data[0].id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "03 Agentes de soporte",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/support-agents",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"support-agents"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.collectionVariables.set(\"agentId\", pm.response.json().data[0].id);"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "04 Crear ticket con activo de TI",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "ana"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"title\": \"Portátil no enciende\",\n  \"description\": \"El portátil del área contable no enciende desde esta mañana\",\n  \"requesterId\": {{requesterId}},\n  \"categoryId\": {{categoryId}},\n  \"supportAgentId\": {{agentId}},\n  \"priority\": \"HIGH\",\n  \"assetId\": \"{{assetId}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// Toma un activo real del catálogo externo (sus registros cambian con el tiempo).",
+											"pm.sendRequest(\"https://api.escuelajs.co/api/v1/products?offset=0&limit=1\", (err, res) => {",
+											"  pm.collectionVariables.set(\"assetId\", res.json()[0].id);",
+											"});"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const t = pm.response.json().data;",
+											"pm.collectionVariables.set(\"ticketId\", t.id);",
+											"pm.collectionVariables.set(\"ticketNumber\", t.ticketNumber);",
+											"pm.test(\"nace en OPEN con número legible\", () => { pm.expect(t.status).to.eql(\"OPEN\"); pm.expect(t.ticketNumber).to.match(/^TCK-\\d{4}-\\d{6}$/); });"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "05 Consultar por número (JPQL)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/number/{{ticketNumber}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"number",
+										"{{ticketNumber}}"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "06 Activo de TI del ticket (servicio con token)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/asset",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"asset"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"detalle del activo\", () => pm.expect(pm.response.json().data.name).to.be.a(\"string\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "07 Resolver sin atender (transición inválida 409)",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"RESOLVED\",\n  \"reason\": \"Intento\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));",
+											"pm.test(\"mensaje: No se permite\", () => pm.expect(pm.response.json().message).to.include(\"No se permite\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "08 Atender ticket",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "marta"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"reason\": \"Tomado por soporte\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"estado IN_PROGRESS\", () => pm.expect(pm.response.json().data.status).to.eql(\"IN_PROGRESS\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "09 Agregar comentario",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/comments",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"comments"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"comment\": \"Se revisó el cargador; el problema es la batería\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "10 Resolver sin nota (400)",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"RESOLVED\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));",
+											"pm.test(\"status ERROR\", () => pm.expect(pm.response.json().status).to.eql(\"ERROR\"));",
+											"pm.test(\"mensaje: nota de resolución\", () => pm.expect(pm.response.json().message).to.include(\"nota de resolución\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "11 Resolver con nota (programa el correo)",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "X-User-Id",
+										"value": "marta"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status"
+									]
+								},
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"RESOLVED\",\n  \"reason\": \"Se reemplazó la batería\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"estado RESOLVED\", () => pm.expect(pm.response.json().data.status).to.eql(\"RESOLVED\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "12 Portal del cliente (X-API-Key)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-API-Key",
+										"value": "{{portalApiKey}}"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/portal/tickets/{{ticketNumber}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"portal",
+										"tickets",
+										"{{ticketNumber}}"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const t = pm.response.json().data;",
+											"pm.test(\"ve el estado y la nota\", () => { pm.expect(t.status).to.eql(\"RESOLVED\"); pm.expect(t.resolutionNote).to.eql(\"Se reemplazó la batería\"); });",
+											"pm.test(\"sin datos internos\", () => pm.expect(t).to.not.have.property(\"requesterEmail\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "13 Historial de estados",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/{{ticketId}}/status-history",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"{{ticketId}}",
+										"status-history"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"dos cambios con usuario\", () => pm.expect(pm.response.json().data.map(x => x.changedBy)).to.eql([\"marta\", \"marta\"]));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "14 Listado resumido (vista)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/summary?status=RESOLVED&size=5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"summary"
+									],
+									"query": [
+										{
+											"key": "status",
+											"value": "RESOLVED"
+										},
+										{
+											"key": "size",
+											"value": "5"
+										}
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "15 Indicadores (procedimiento almacenado)",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/tickets/indicators",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"tickets",
+										"indicators"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"hay tickets resueltos\", () => pm.expect(pm.response.json().data.byStatus.RESOLVED).to.be.at.least(1));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "16 Correo en Mailpit (espera el job de Quartz)",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"// El job de Quartz envía los correos pendientes cada 30 segundos.",
+											"setTimeout(() => {}, 35000);"
+										]
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"llegó el correo del ticket resuelto\", () => pm.expect(pm.response.json().messages_count).to.eql(1));"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8025/api/v1/search?query={{ticketNumber}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8025",
+									"path": [
+										"api",
+										"v1",
+										"search"
+									],
+									"query": [
+										{
+											"key": "query",
+											"value": "{{ticketNumber}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "17 Volcado del histórico de auditoría (Spring Batch)",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-User-Id",
+										"value": "jcastaneda"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"const r = pm.response.json().data;",
+											"pm.test(\"job COMPLETED\", () => pm.expect(r.status).to.eql(\"COMPLETED\"));",
+											"pm.test(\"copió la actividad de la demostración\", () => pm.expect(r.writeCount).to.be.at.least(1));"
+										]
+									}
+								}
+							]
+						},
+						{
+							"name": "18 Resumen del histórico",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8081/api/v1/batch/audit-history/summary",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8081",
+									"path": [
+										"api",
+										"v1",
+										"batch",
+										"audit-history",
+										"summary"
+									]
+								}
+							},
+							"response": [],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+											"pm.test(\"status SUCCESS\", () => pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"));",
+											"pm.test(\"eventos de negocio y peticiones HTTP\", () => { const c = pm.response.json().data.byCategory; pm.expect(c).to.have.property(\"HTTP_REQUEST\"); pm.expect(c).to.have.property(\"BUSINESS_EVENT\"); });"
 										]
 									}
 								}

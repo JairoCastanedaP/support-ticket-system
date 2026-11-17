@@ -27,12 +27,9 @@ Este roadmap muestra cómo evoluciona el Support Ticket System, etapa por etapa,
 | 09 | architecture/09-advanced-persistence | JPQL, SQL nativo con Projection, vista `vw_ticket_summary` como VO de solo lectura, procedimiento `usp_ticket_indicators` y scripts SQL con datos iniciales |
 | 10 | architecture/10-integrations | Catálogo de activos con token Bearer, directorio interno de empleados, portal con API key, correo con Quartz y Mailpit, validadores `@ValidPhone` y `@ValidTicketNumber` |
 | 11 | architecture/11-batch-audit-history | PostgreSQL como tercera base; Spring Batch copia la auditoría de Oracle de forma incremental, con bloque parametrizado, auditoría de ejecución en las tablas de Spring Batch y log en archivo |
+| 12 | architecture/12-documentation-demo | Swagger para toda la API, REST Docs generado por pruebas, README con diagramas, Postman final con recorrido de demostración y entorno reproducible |
 
-## 4. Etapas de la entrega final
-
-| N.º | Rama | Componentes de arquitectura |
-|---|---|---|
-| 12 | architecture/12-documentation-demo | Documentación y demostración |
+## 4. Detalle de las etapas de la entrega final
 
 ### 07 — Base REST
 
@@ -109,10 +106,12 @@ Los eventos de auditoría recorren las tres bases: MySQL (outbox) → Oracle (au
 
 ### 12 — Documentación y demo
 
-- Swagger (springdoc-openapi) para toda la API.
-- REST Docs (`.html`) para los endpoints de Ticket.
-- Colección de Postman final ordenada por etapa.
-- README: propósito, arquitectura (diagrama Mermaid de capas y componentes), modelo ER, tres bases y cómo levantar el entorno con Docker Compose.
+- **Swagger (springdoc-openapi)** para toda la API en `/swagger-ui.html`: `@Tag` y `@Operation` en las interfaces de los controllers, paginación visible, header `X-User-Id` en las operaciones de escritura y esquema `X-API-Key` para el portal.
+- **Spring REST Docs** para toda la API: `ApiDocumentationTest` ejecuta cada endpoint contra la aplicación (perfil local, servicios externos simulados) y Asciidoctor genera `/docs/index.html` con peticiones, respuestas, parámetros y campos, más una sección de errores.
+- La imagen de Docker ejecuta las pruebas al construirse: genera la documentación y solo se construye si todas pasan.
+- **Entorno reproducible:** `infrastructure/oracle/startup/01-create-audit-user.sh` crea el usuario de auditoría en Oracle si no existe; todos los recursos llevan el prefijo del proyecto (`support-ticket-system` en Docker, `support_ticket_*` en las bases).
+- **README** con propósito, diagramas Mermaid (arquitectura, modelo de datos y estados), stack, cómo ejecutar, endpoints, pruebas y estructura.
+- **Postman final:** se retira la carpeta de ejemplo ajena al proyecto y se agrega `12-demo`, el recorrido completo de la demostración.
 - Merge a `main` y tag `mvp-final`.
 
 ## 5. Componentes de arquitectura y evidencia
